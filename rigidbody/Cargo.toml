@@ -1,0 +1,8 @@
+[package]
+name = "rigidbody"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bevy = { workspace = true }
+bevy_rapier3d = { workspace = true }

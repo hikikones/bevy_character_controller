@@ -1,0 +1,29 @@
+[package]
+name = "bevy_character_controller"
+version.workspace = true
+edition.workspace = true
+
+[workspace]
+members = ["rigidbody", "crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+bevy = "0.8"
+bevy_rapier3d = "0.18"
+
+[dependencies]
+bevy = { workspace = true }
+bevy_rapier3d = { workspace = true }
+
+[[bin]]
+name = "rigidbody"
+path = "rigidbody/src/main.rs"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
