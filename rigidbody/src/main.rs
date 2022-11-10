@@ -44,10 +44,21 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert_bundle((
-            Collider::cuboid(250.0, 0.5, 250.0),
-            Friction::coefficient(1.0),
-        ));
+        .insert_bundle((Collider::cuboid(0.5, 0.5, 0.5), Friction::coefficient(1.0)));
+
+    // Ice
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: assets.mesh(MeshName::Cube),
+            material: assets.material(MaterialName::Cyan),
+            transform: Transform {
+                translation: -Vec3::Z * 6.0,
+                scale: Vec3::new(12.0, 1.0, 6.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert_bundle((Collider::cuboid(0.5, 0.5, 0.5), Friction::coefficient(0.0)));
 
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
