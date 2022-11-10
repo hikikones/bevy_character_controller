@@ -18,8 +18,6 @@ impl MoveTowardsExt for f32 {
 
 impl MoveTowardsExt for Vec3 {
     fn move_towards(self, target: Self, max_delta: f32) -> Self {
-        assert!(max_delta > 0.0);
-
         if self.distance(target) <= max_delta {
             return target;
         }
