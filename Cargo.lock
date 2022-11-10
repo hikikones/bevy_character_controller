@@ -267,7 +267,9 @@ name = "bevy_character_controller"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_extensions",
  "bevy_rapier3d",
+ "bootstrap",
 ]
 
 [[package]]
@@ -885,6 +887,13 @@ name = "block"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
+
+[[package]]
+name = "bootstrap"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
 
 [[package]]
 name = "bumpalo"
@@ -2721,7 +2730,9 @@ name = "rigidbody"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_extensions",
  "bevy_rapier3d",
+ "bootstrap",
 ]
 
 [[package]]
