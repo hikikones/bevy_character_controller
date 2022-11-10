@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::PresentMode};
+use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 use bevy_extensions::*;
@@ -7,7 +7,6 @@ use bootstrap::*;
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::Immediate,
             ..Default::default()
         })
         .insert_resource(RapierConfiguration {
@@ -45,7 +44,10 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert(Collider::cuboid(250.0, 0.5, 250.0));
+        .insert_bundle((
+            Collider::cuboid(250.0, 0.5, 250.0),
+            Friction::coefficient(1.0),
+        ));
 
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
@@ -54,7 +56,10 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
         RigidBody::Dynamic,
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
         CollisionGroups::default(),
-        Friction::default(),
+        Friction {
+            coefficient: 0.0,
+            combine_rule: CoefficientCombineRule::Average,
+        },
         Restitution::default(),
         Damping::default(),
         ColliderMassProperties::default(),
