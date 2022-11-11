@@ -3,13 +3,13 @@ use bevy::prelude::*;
 pub mod assets;
 pub mod camera;
 pub mod input;
-pub mod level;
+pub mod platform;
 pub mod player;
 
 pub use assets::*;
 pub use camera::*;
 pub use input::*;
-pub use level::*;
+pub use platform::*;
 pub use player::*;
 
 pub struct BootstrapPlugin;
@@ -17,7 +17,7 @@ pub struct BootstrapPlugin;
 impl Plugin for BootstrapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(assets::AssetsPlugin)
-            .add_plugin(level::LevelPlugin)
+            .add_plugin(platform::PlatformPlugin)
             .add_plugin(camera::CameraPlugin)
             .add_plugin(input::InputPlugin)
             .add_plugin(player::PlayerPlugin)

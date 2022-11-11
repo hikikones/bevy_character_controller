@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 use crate::assets::*;
 
-pub struct LevelPlugin;
+pub struct PlatformPlugin;
 
-impl Plugin for LevelPlugin {
+impl Plugin for PlatformPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system_to_stage(StartupStage::PreStartup, spawn_level);
+        app.add_startup_system_to_stage(StartupStage::PreStartup, spawn_platforms);
     }
 }
 
@@ -16,7 +16,7 @@ pub enum Platform {
     Ice,
 }
 
-fn spawn_level(mut commands: Commands, assets: Res<MyAssets>) {
+fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
     // Ground
     commands
         .spawn_bundle(PbrBundle {
