@@ -1,0 +1,9 @@
+[package]
+name = "manual"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bevy = { workspace = true }
+bevy_extensions = { workspace = true }
+bootstrap = { workspace = true }

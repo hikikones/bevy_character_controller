@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [workspace]
-members = ["rigidbody", "kinematic", "crates/*"]
+members = ["rigidbody", "kinematic", "manual", "crates/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -33,6 +33,10 @@ path = "rigidbody/src/main.rs"
 [[bin]]
 name = "kinematic"
 path = "kinematic/src/main.rs"
+
+[[bin]]
+name = "manual"
+path = "manual/src/main.rs"
 
 [profile.dev]
 opt-level = 1
