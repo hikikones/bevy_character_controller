@@ -20,13 +20,12 @@ fn main() {
         .run();
 }
 
-#[derive(Component)]
-struct Player;
-
-fn setup(mut commands: Commands, assets: Res<MyAssets>) {
-    // Player
-    let player = commands.spawn_actor(ActorConfig::default());
-    commands.entity(player).insert_bundle((Player,));
+fn setup(
+    player_q: Query<Entity, With<Player>>,
+    platform_q: Query<(Entity, &Platform)>,
+    mut commands: Commands,
+) {
+    // ...
 }
 
 const MAX_SPEED: f32 = 10.0;

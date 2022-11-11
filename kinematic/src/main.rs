@@ -26,45 +26,29 @@ fn main() {
         .run();
 }
 
-#[derive(Component)]
-struct Player;
-
-fn setup(mut commands: Commands, assets: Res<MyAssets>) {
-    // Ground
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: assets.mesh(MeshName::Cube),
-            material: assets.material(MaterialName::DarkGray),
-            transform: Transform {
-                translation: -Vec3::Y * 0.5,
-                scale: Vec3::new(500.0, 1.0, 500.0),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert_bundle((Collider::cuboid(0.5, 0.5, 0.5), Friction::coefficient(1.0)));
-
-    // Ice
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: assets.mesh(MeshName::Cube),
-            material: assets.material(MaterialName::Cyan),
-            transform: Transform {
-                translation: -Vec3::Z * 6.0,
-                scale: Vec3::new(12.0, 1.0, 6.0),
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert_bundle((Collider::cuboid(0.5, 0.5, 0.5), Friction::coefficient(0.0)));
-
+fn setup(
+    player_q: Query<Entity, With<Player>>,
+    platform_q: Query<(Entity, &Platform)>,
+    mut commands: Commands,
+) {
     // Player
-    let player = commands.spawn_actor(ActorConfig::default());
-    commands.entity(player).insert_bundle((
+    commands.entity(player_q.single()).insert_bundle((
         Player,
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
         KinematicCharacterController::default(),
     ));
+
+    // Platforms
+    for (entity, platform) in platform_q.iter() {
+        let friction = match platform {
+            Platform::Ground => 1.0,
+            Platform::Ice => 0.0,
+        };
+        commands.entity(entity).insert_bundle((
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(friction),
+        ));
+    }
 }
 
 const MAX_SPEED: f32 = 10.0;

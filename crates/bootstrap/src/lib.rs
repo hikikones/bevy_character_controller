@@ -1,16 +1,16 @@
 use bevy::prelude::*;
 
-pub mod actor;
 pub mod assets;
 pub mod camera;
 pub mod input;
 pub mod level;
+pub mod player;
 
-pub use actor::*;
 pub use assets::*;
 pub use camera::*;
 pub use input::*;
 pub use level::*;
+pub use player::*;
 
 pub struct BootstrapPlugin;
 
@@ -20,6 +20,7 @@ impl Plugin for BootstrapPlugin {
             .add_plugin(level::LevelPlugin)
             .add_plugin(camera::CameraPlugin)
             .add_plugin(input::InputPlugin)
+            .add_plugin(player::PlayerPlugin)
             .add_startup_system(spawn_light);
     }
 }
