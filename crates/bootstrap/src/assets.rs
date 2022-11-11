@@ -5,7 +5,11 @@ pub struct AssetsPlugin;
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(MyAssets::default())
-            .add_startup_system_to_stage(StartupStage::PreStartup, load_assets);
+            .add_startup_stage_before(
+                StartupStage::PreStartup,
+                "load_assets",
+                SystemStage::single(load_assets),
+            );
     }
 }
 

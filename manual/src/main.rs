@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PresentMode};
 
 use bevy_extensions::*;
 use bootstrap::*;
@@ -6,6 +6,7 @@ use bootstrap::*;
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
+            present_mode: PresentMode::AutoNoVsync,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -23,30 +24,6 @@ fn main() {
 struct Player;
 
 fn setup(mut commands: Commands, assets: Res<MyAssets>) {
-    // Ground
-    commands.spawn_bundle(PbrBundle {
-        mesh: assets.mesh(MeshName::Cube),
-        material: assets.material(MaterialName::DarkGray),
-        transform: Transform {
-            translation: -Vec3::Y * 0.5,
-            scale: Vec3::new(500.0, 1.0, 500.0),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-
-    // Ice
-    commands.spawn_bundle(PbrBundle {
-        mesh: assets.mesh(MeshName::Cube),
-        material: assets.material(MaterialName::Cyan),
-        transform: Transform {
-            translation: -Vec3::Z * 6.0,
-            scale: Vec3::new(12.0, 1.0, 6.0),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
     commands.entity(player).insert_bundle((Player,));
