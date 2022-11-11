@@ -19,10 +19,8 @@ fn main() {
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
-            SystemSet::new()
-                .with_system(movement)
-                .with_system(rotation)
-                .with_system(jump),
+            SystemSet::new().with_system(movement), // .with_system(rotation)
+                                                    // .with_system(jump),
         )
         .add_system_to_stage(CoreStage::PreUpdate, bevy::window::close_on_esc)
         .run();
@@ -64,23 +62,8 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     let player = commands.spawn_actor(ActorConfig::default());
     commands.entity(player).insert_bundle((
         Player,
-        RigidBody::Dynamic,
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
-        CollisionGroups::default(),
-        Friction {
-            coefficient: 0.0,
-            combine_rule: CoefficientCombineRule::Average,
-        },
-        Restitution::default(),
-        Damping::default(),
-        ColliderMassProperties::default(),
-        GravityScale::default(),
-        Velocity::default(),
-        ExternalForce::default(),
-        ExternalImpulse::default(),
-        Ccd::default(),
-        Sleeping::default(),
-        LockedAxes::ROTATION_LOCKED,
+        KinematicCharacterController::default(),
     ));
 }
 
@@ -90,21 +73,23 @@ const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
 const JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
-    mut player_q: Query<&mut Velocity, With<Player>>,
+    mut player_q: Query<&mut KinematicCharacterController, With<Player>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
-    let mut velocity = player_q.single_mut();
+    let mut controller = player_q.single_mut();
 
     let input = input.x0z();
     let dt = time.delta_seconds();
     let target = input * MAX_SPEED;
     let max_delta = MAX_ACCELERATION * dt;
 
-    velocity.linvel = velocity
-        .linvel
-        .move_towards(target, max_delta)
-        .x_z(velocity.linvel.y);
+    controller.translation = Some(target * dt);
+
+    // let v = velocity
+    //     .linvel
+    //     .move_towards(target, max_delta)
+    //     .x_z(velocity.linvel.y);
 }
 
 fn rotation(
