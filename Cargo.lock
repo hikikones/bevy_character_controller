@@ -1904,6 +1904,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "kinematic"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_extensions",
+ "bevy_rapier3d",
+ "bootstrap",
+]
+
+[[package]]
 name = "kqueue"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
