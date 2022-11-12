@@ -47,8 +47,10 @@ impl Plugin for PhysicsPlugin {
             SYNC_STAGE,
             SystemStage::parallel()
                 .with_run_criteria(fixed_run_criteria)
-                .with_system(sync_test),
+                // .with_system(sync_test),
+                .with_system(set_lerp),
         )
+        .add_system(lerp)
         // .add_stage_after(
         //     PhysicsStages::Writeback,
         //     SYNC_STAGE,
@@ -111,10 +113,16 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
-const TICK: f32 = 1.0 / 10.0;
+const TICK: f32 = 1.0 / 5.0;
 
 #[derive(Default)]
 struct FixedTime(f32);
+
+impl FixedTime {
+    fn percent(&self) -> f32 {
+        self.0 / TICK
+    }
+}
 
 fn print_dt(sim: Res<SimulationToRenderTime>) {
     dbg!(sim.diff);
@@ -133,6 +141,23 @@ fn sync_test(
     player_q: Query<&Transform, With<Player>>,
 ) {
     actor_q.single_mut().translation = player_q.single().translation;
+}
+
+#[derive(Default, Component)]
+struct Lerp(Vec3, Vec3);
+
+fn set_lerp(
+    mut actor_q: Query<&mut Lerp, (With<Actor>, Without<Player>)>,
+    player_q: Query<&Transform, With<Player>>,
+) {
+    let mut lerp = actor_q.single_mut();
+    lerp.0 = lerp.1;
+    lerp.1 = player_q.single().translation;
+}
+
+fn lerp(mut actor_q: Query<(&mut Transform, &Lerp), With<Actor>>, fixed_time: Res<FixedTime>) {
+    let (mut transform, lerp) = actor_q.single_mut();
+    transform.translation = Vec3::lerp(lerp.0, lerp.1, fixed_time.percent());
 }
 
 // fn sync_test(player_q: Query<&Transform, With<Player>>) {
@@ -186,6 +211,7 @@ fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
 
     // Actor
     let actor = commands.spawn_actor(ActorConfig::default());
+    commands.entity(actor).insert(Lerp::default());
 
     // Platforms
     for (entity, platform) in platform_q.iter() {
