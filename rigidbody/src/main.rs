@@ -23,6 +23,8 @@ fn main() {
         .run();
 }
 
+const SYNC_STAGE: &str = "sync_stage";
+
 struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
@@ -39,6 +41,20 @@ impl Plugin for PhysicsPlugin {
         .insert_resource(FixedTime::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(true))
         .add_plugin(RapierDebugRenderPlugin::default())
+        // .add_system_to_stage(CoreStage::First, print_dt)
+        .add_stage_after(
+            PhysicsStages::Writeback,
+            SYNC_STAGE,
+            SystemStage::parallel()
+                .with_run_criteria(fixed_run_criteria)
+                .with_system(sync_test),
+        )
+        // .add_stage_after(
+        //     PhysicsStages::Writeback,
+        //     SYNC_STAGE,
+        //     SystemStage::single(sync_test).with_run_criteria(rapier_run_criteria),
+        // )
+        // .add_system_to_stage(CoreStage::PostUpdate, sync_test)
         .add_system_to_stage(CoreStage::Last, fixed_time);
 
         // app.add_stage_after(
@@ -99,6 +115,31 @@ const TICK: f32 = 1.0 / 10.0;
 
 #[derive(Default)]
 struct FixedTime(f32);
+
+fn print_dt(sim: Res<SimulationToRenderTime>) {
+    dbg!(sim.diff);
+}
+
+fn rapier_run_criteria(sim: Res<SimulationToRenderTime>, ctx: Res<RapierContext>) -> ShouldRun {
+    dbg!(sim.diff);
+    match sim.diff >= ctx.integration_parameters.dt {
+        true => ShouldRun::Yes,
+        false => ShouldRun::No,
+    }
+}
+
+fn sync_test(
+    mut actor_q: Query<&mut Transform, (With<Actor>, Without<Player>)>,
+    player_q: Query<&Transform, With<Player>>,
+) {
+    actor_q.single_mut().translation = player_q.single().translation;
+}
+
+// fn sync_test(player_q: Query<&Transform, With<Player>>) {
+//     for t in player_q.iter() {
+//         dbg!(t.translation);
+//     }
+// }
 
 fn fixed_run_criteria(fixed_time: Res<FixedTime>) -> ShouldRun {
     match fixed_time.0 >= TICK {
