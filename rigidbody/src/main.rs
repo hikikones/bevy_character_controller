@@ -28,70 +28,70 @@ struct PhysicsPlugin;
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RapierConfiguration {
-            timestep_mode: TimestepMode::Fixed {
+            timestep_mode: TimestepMode::Interpolated {
                 dt: TICK,
-                // time_scale: 1.0,
+                time_scale: 1.0,
                 substeps: 1,
             },
             // force_update_from_transform_changes: false,
             ..Default::default()
         })
         .insert_resource(FixedTime::default())
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(true))
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_system_to_stage(CoreStage::Last, fixed_time);
 
-        app.add_stage_after(
-            CoreStage::Update,
-            PhysicsStages::SyncBackend,
-            SystemStage::parallel()
-                // .with_run_criteria(fixed_run_criteria)
-                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                    PhysicsStages::SyncBackend,
-                )),
-        );
+        // app.add_stage_after(
+        //     CoreStage::Update,
+        //     PhysicsStages::SyncBackend,
+        //     SystemStage::parallel()
+        //         // .with_run_criteria(fixed_run_criteria)
+        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        //             PhysicsStages::SyncBackend,
+        //         )),
+        // );
 
-        app.add_stage_after(
-            PhysicsStages::SyncBackend,
-            PhysicsStages::StepSimulation,
-            SystemStage::parallel()
-                .with_run_criteria(fixed_run_criteria)
-                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                    PhysicsStages::StepSimulation,
-                )),
-        );
-
-        app.add_stage_after(
-            PhysicsStages::StepSimulation,
-            PhysicsStages::Writeback,
-            SystemStage::parallel()
-                .with_run_criteria(fixed_run_criteria)
-                // .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                //     PhysicsStages::Writeback,
-                // )),
-                .with_system(sync),
-        );
+        // app.add_stage_after(
+        //     PhysicsStages::SyncBackend,
+        //     PhysicsStages::StepSimulation,
+        //     SystemStage::parallel()
+        //         .with_run_criteria(fixed_run_criteria)
+        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        //             PhysicsStages::StepSimulation,
+        //         )),
+        // );
 
         // app.add_stage_after(
         //     PhysicsStages::StepSimulation,
         //     PhysicsStages::Writeback,
         //     SystemStage::parallel()
-        //         // .with_run_criteria(fixed_run_criteria)
-        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-        //             PhysicsStages::Writeback,
-        //         )),
+        //         .with_run_criteria(fixed_run_criteria)
+        //         // .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        //         //     PhysicsStages::Writeback,
+        //         // )),
+        //         .with_system(sync),
         // );
 
-        // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
-        app.add_stage_before(
-            CoreStage::Last,
-            PhysicsStages::DetectDespawn,
-            SystemStage::parallel()
-                // .with_run_criteria(fixed_run_criteria)
-                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                    PhysicsStages::DetectDespawn,
-                )),
-        );
+        // // app.add_stage_after(
+        // //     PhysicsStages::StepSimulation,
+        // //     PhysicsStages::Writeback,
+        // //     SystemStage::parallel()
+        // //         // .with_run_criteria(fixed_run_criteria)
+        // //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        // //             PhysicsStages::Writeback,
+        // //         )),
+        // // );
+
+        // // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
+        // app.add_stage_before(
+        //     CoreStage::Last,
+        //     PhysicsStages::DetectDespawn,
+        //     SystemStage::parallel()
+        //         // .with_run_criteria(fixed_run_criteria)
+        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        //             PhysicsStages::DetectDespawn,
+        //         )),
+        // );
     }
 }
 
