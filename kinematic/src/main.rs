@@ -25,14 +25,10 @@ fn main() {
         .run();
 }
 
-fn setup(
-    player_q: Query<Entity, With<Player>>,
-    platform_q: Query<(Entity, &Platform)>,
-    mut commands: Commands,
-) {
+fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
     // Player
-    commands.entity(player_q.single()).insert_bundle((
-        Player,
+    let player = commands.spawn_actor(ActorConfig::default());
+    commands.entity(player).insert_bundle((
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
         KinematicCharacterController::default(),
     ));
@@ -56,7 +52,7 @@ const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
 const JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
-    mut player_q: Query<&mut KinematicCharacterController, With<Player>>,
+    mut player_q: Query<&mut KinematicCharacterController, With<Actor>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -76,7 +72,7 @@ fn movement(
 }
 
 fn rotation(
-    mut player_q: Query<&mut Transform, With<Player>>,
+    mut player_q: Query<&mut Transform, With<Actor>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -92,7 +88,7 @@ fn rotation(
     );
 }
 
-fn jump(mut player_q: Query<&mut ExternalImpulse, With<Player>>, input_action: Res<InputAction>) {
+fn jump(mut player_q: Query<&mut ExternalImpulse, With<Actor>>, input_action: Res<InputAction>) {
     if let InputAction::Jump = *input_action {
         let force = Vec3::Y * f32::sqrt(2.0 * 9.81 * JUMP_HEIGHT);
         player_q.single_mut().impulse = force;

@@ -20,11 +20,10 @@ fn main() {
 }
 
 fn setup(
-    player_q: Query<Entity, With<Player>>,
-    platform_q: Query<(Entity, &Platform)>,
+    // platform_q: Query<(Entity, &Platform)>,
     mut commands: Commands,
 ) {
-    // ...
+    commands.spawn_actor(ActorConfig::default());
 }
 
 const MAX_SPEED: f32 = 10.0;
@@ -33,7 +32,7 @@ const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
 const JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
-    mut player_q: Query<&mut Transform, With<Player>>,
+    mut player_q: Query<&mut Transform, With<Actor>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -48,7 +47,7 @@ fn movement(
 }
 
 fn rotation(
-    mut player_q: Query<&mut Transform, With<Player>>,
+    mut player_q: Query<&mut Transform, With<Actor>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
