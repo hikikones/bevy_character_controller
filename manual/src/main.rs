@@ -16,7 +16,6 @@ fn main() {
             CoreStage::Update,
             SystemSet::new().with_system(movement).with_system(rotation),
         )
-        .add_system_to_stage(CoreStage::PreUpdate, bevy::window::close_on_esc)
         .run();
 }
 

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 use bevy_extensions::*;
@@ -9,13 +9,9 @@ fn main() {
         .insert_resource(WindowDescriptor {
             ..Default::default()
         })
-        .insert_resource(RapierConfiguration {
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(BootstrapPlugin)
+        .add_plugin(PhysicsPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
@@ -24,8 +20,96 @@ fn main() {
                 .with_system(rotation)
                 .with_system(jump),
         )
-        .add_system_to_stage(CoreStage::PreUpdate, bevy::window::close_on_esc)
         .run();
+}
+
+struct PhysicsPlugin;
+
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(RapierConfiguration {
+            timestep_mode: TimestepMode::Fixed {
+                dt: TICK,
+                substeps: 1,
+            },
+            ..Default::default()
+        })
+        .insert_resource(FixedTime::default())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
+        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_system_to_stage(CoreStage::Last, fixed_time);
+
+        app.add_stage_after(
+            CoreStage::Update,
+            PhysicsStages::SyncBackend,
+            SystemStage::parallel()
+                // .with_run_criteria(fixed_run_criteria)
+                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+                    PhysicsStages::SyncBackend,
+                )),
+        );
+
+        //yolo
+        // app.add_stage_after(
+        //     CoreStage::Update,
+        //     PhysicsStages::SyncBackend,
+        //     SystemStage::parallel()
+        //         .with_run_criteria(fixed_run_criteria)
+        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        //             PhysicsStages::SyncBackend,
+        //         )),
+        // );
+
+        app.add_stage_after(
+            PhysicsStages::SyncBackend,
+            PhysicsStages::StepSimulation,
+            SystemStage::parallel()
+                .with_run_criteria(fixed_run_criteria)
+                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+                    PhysicsStages::StepSimulation,
+                )),
+        );
+        app.add_stage_after(
+            PhysicsStages::StepSimulation,
+            PhysicsStages::Writeback,
+            SystemStage::parallel()
+                // .with_run_criteria(fixed_run_criteria)
+                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+                    PhysicsStages::Writeback,
+                )),
+        );
+
+        // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
+        app.add_stage_before(
+            CoreStage::Last,
+            PhysicsStages::DetectDespawn,
+            SystemStage::parallel()
+                // .with_run_criteria(fixed_run_criteria)
+                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+                    PhysicsStages::DetectDespawn,
+                )),
+        );
+    }
+}
+
+const TICK: f32 = 1.0 / 10.0;
+
+#[derive(Default)]
+struct FixedTime(f32);
+
+fn fixed_run_criteria(fixed_time: Res<FixedTime>) -> ShouldRun {
+    match fixed_time.0 >= TICK {
+        true => ShouldRun::Yes,
+        false => ShouldRun::No,
+    }
+}
+
+fn fixed_time(mut fixed_time: ResMut<FixedTime>, time: Res<Time>) {
+    if fixed_time.0 >= TICK {
+        fixed_time.0 -= TICK;
+    }
+
+    fixed_time.0 += time.delta_seconds();
 }
 
 fn setup(
@@ -83,12 +167,14 @@ fn movement(
     let input = input.x0z();
     let dt = time.delta_seconds();
     let target = input * MAX_SPEED;
-    let max_delta = MAX_ACCELERATION * dt;
+    let max_delta = MAX_ACCELERATION * TICK;
 
     velocity.linvel = velocity
         .linvel
         .move_towards(target, max_delta)
         .x_z(velocity.linvel.y);
+
+    // dbg!(velocity.linvel);
 }
 
 fn rotation(

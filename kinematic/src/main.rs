@@ -22,7 +22,6 @@ fn main() {
             SystemSet::new().with_system(movement), // .with_system(rotation)
                                                     // .with_system(jump),
         )
-        .add_system_to_stage(CoreStage::PreUpdate, bevy::window::close_on_esc)
         .run();
 }
 

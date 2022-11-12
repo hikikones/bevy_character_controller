@@ -21,7 +21,8 @@ impl Plugin for BootstrapPlugin {
             .add_plugin(camera::CameraPlugin)
             .add_plugin(input::InputPlugin)
             .add_plugin(player::PlayerPlugin)
-            .add_startup_system(spawn_light);
+            .add_startup_system(spawn_light)
+            .add_system_to_stage(CoreStage::PreUpdate, bevy::window::close_on_esc);
     }
 }
 
