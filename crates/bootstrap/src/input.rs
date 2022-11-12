@@ -60,16 +60,16 @@ impl InputMovement {
 fn movement(keyboard: Res<Input<KeyCode>>, mut input_movement: ResMut<InputMovement>) {
     let mut input = Vec2::ZERO;
 
-    if keyboard.pressed(KeyCode::Left) {
+    if keyboard.any_pressed([KeyCode::Left, KeyCode::A]) {
         input.x -= 1.0;
     }
-    if keyboard.pressed(KeyCode::Right) {
+    if keyboard.any_pressed([KeyCode::Right, KeyCode::D]) {
         input.x += 1.0;
     }
-    if keyboard.pressed(KeyCode::Up) {
+    if keyboard.any_pressed([KeyCode::Up, KeyCode::W]) {
         input.y -= 1.0;
     }
-    if keyboard.pressed(KeyCode::Down) {
+    if keyboard.any_pressed([KeyCode::Down, KeyCode::S]) {
         input.y += 1.0;
     }
 
