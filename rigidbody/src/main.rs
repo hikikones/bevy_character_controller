@@ -30,8 +30,10 @@ impl Plugin for PhysicsPlugin {
         app.insert_resource(RapierConfiguration {
             timestep_mode: TimestepMode::Fixed {
                 dt: TICK,
+                // time_scale: 1.0,
                 substeps: 1,
             },
+            // force_update_from_transform_changes: false,
             ..Default::default()
         })
         .insert_resource(FixedTime::default())
@@ -49,17 +51,6 @@ impl Plugin for PhysicsPlugin {
                 )),
         );
 
-        //yolo
-        // app.add_stage_after(
-        //     CoreStage::Update,
-        //     PhysicsStages::SyncBackend,
-        //     SystemStage::parallel()
-        //         .with_run_criteria(fixed_run_criteria)
-        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-        //             PhysicsStages::SyncBackend,
-        //         )),
-        // );
-
         app.add_stage_after(
             PhysicsStages::SyncBackend,
             PhysicsStages::StepSimulation,
@@ -69,15 +60,27 @@ impl Plugin for PhysicsPlugin {
                     PhysicsStages::StepSimulation,
                 )),
         );
+
         app.add_stage_after(
             PhysicsStages::StepSimulation,
             PhysicsStages::Writeback,
             SystemStage::parallel()
-                // .with_run_criteria(fixed_run_criteria)
-                .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
-                    PhysicsStages::Writeback,
-                )),
+                .with_run_criteria(fixed_run_criteria)
+                // .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+                //     PhysicsStages::Writeback,
+                // )),
+                .with_system(sync),
         );
+
+        // app.add_stage_after(
+        //     PhysicsStages::StepSimulation,
+        //     PhysicsStages::Writeback,
+        //     SystemStage::parallel()
+        //         // .with_run_criteria(fixed_run_criteria)
+        //         .with_system_set(RapierPhysicsPlugin::<NoUserData>::get_systems(
+        //             PhysicsStages::Writeback,
+        //         )),
+        // );
 
         // NOTE: we run sync_removals at the end of the frame, too, in order to make sure we don’t miss any `RemovedComponents`.
         app.add_stage_before(
@@ -150,6 +153,14 @@ fn setup(
             Friction::coefficient(friction),
         ));
     }
+}
+
+fn sync(mut q: Query<(Entity, &mut Transform), With<Player>>, ctx: Res<RapierContext>) {
+    let (entity, mut transform) = q.single_mut();
+    let handle = ctx.entity2body().get(&entity).unwrap();
+    let rb = ctx.bodies.get(*handle).unwrap();
+    let pos = rb.position();
+    transform.translation = pos.translation.into();
 }
 
 const MAX_SPEED: f32 = 10.0;
