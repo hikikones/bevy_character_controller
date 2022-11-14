@@ -43,6 +43,7 @@ struct Player;
 
 #[derive(Debug, Component, PartialEq, Eq)]
 enum GroundState {
+    None,
     Normal,
     Slippery,
 }
@@ -158,17 +159,18 @@ fn set_ground(
         PhysicsLayer::PLATFORM.into(),
     );
 
-    if let Some((platform_entity, _)) = ray_hit {
-        let platform = platform_q.get(platform_entity).unwrap();
-        let state = match platform {
+    let state = if let Some((platform_entity, _)) = ray_hit {
+        match platform_q.get(platform_entity).unwrap() {
             PlatformName::Ground => GroundState::Normal,
             PlatformName::Ice => GroundState::Slippery,
-        };
-
-        if *ground_state != state {
-            dbg!(&state);
-            *ground_state = state;
         }
+    } else {
+        GroundState::None
+    };
+
+    if *ground_state != state {
+        dbg!(&state);
+        *ground_state = state;
     }
 }
 
