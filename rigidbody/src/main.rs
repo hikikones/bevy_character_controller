@@ -65,16 +65,16 @@ impl GroundState {
     const fn acceleration(&self) -> f32 {
         match self {
             GroundState::None => 10.0,
-            GroundState::Normal => 100.0,
-            GroundState::Slippery => 5.0,
+            GroundState::Normal => 20.0,
+            GroundState::Slippery => 40.0,
         }
     }
 
-    const fn damping(&self) -> f32 {
+    const fn resistance(&self) -> f32 {
         match self {
             GroundState::None => 1.0,
-            GroundState::Normal => 10.0,
-            GroundState::Slippery => 0.1,
+            GroundState::Normal => 1.0,
+            GroundState::Slippery => 0.01,
         }
     }
 }
@@ -112,7 +112,7 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
             },
             Friction::coefficient(0.0),
             // Restitution::default(),
-            Damping::default(),
+            // Damping::default(),
             // ColliderMassProperties::default(),
             // GravityScale::default(),
             Velocity::default(),
@@ -150,7 +150,34 @@ fn movement(
     tick: Res<SimulationTick>,
 ) {
     if input.is_zero() {
-        return;
+        // return;
+    }
+
+    let (mut velocity, speed, acceleration, resistance) = player_q.single_mut();
+
+    let direction = input.x0z();
+    let current_velocity = velocity.linvel.x0z();
+    let target_velocity = direction * speed.0;
+    // let drag = current_velocity.normalize_or_zero() * resistance.0;
+    let max_delta = acceleration.0 * tick.rate();
+
+    // let actual_velocity =
+    //     current_velocity.move_towards(target_velocity, max_delta) * (1.0 - resistance.0);
+    let actual_velocity = current_velocity.move_towards(target_velocity, max_delta * resistance.0);
+    velocity.linvel = actual_velocity.x_z(velocity.linvel.y);
+
+    // velocity.linvel = current_velocity
+    //     .move_towards(target_velocity, max_delta)
+    //     .x_z(velocity.linvel.y);
+}
+
+fn resistance(
+    mut player_q: Query<(&mut Velocity, &Speed, &Acceleration, &Resistance), With<Player>>,
+    input: Res<InputMovement>,
+    tick: Res<SimulationTick>,
+) {
+    if input.is_zero() {
+        // return;
     }
 
     let (mut velocity, speed, acceleration, resistance) = player_q.single_mut();
@@ -229,14 +256,14 @@ fn set_ground(
 
 fn on_ground_change(
     mut player_q: Query<
-        (&GroundState, &mut Acceleration, &mut Damping),
+        (&GroundState, &mut Acceleration, &mut Resistance),
         (Changed<GroundState>, With<Player>),
     >,
 ) {
-    if let Ok((ground_state, mut acceleration, mut damping)) = player_q.get_single_mut() {
+    if let Ok((ground_state, mut acceleration, mut resistance)) = player_q.get_single_mut() {
         dbg!(ground_state);
         acceleration.0 = ground_state.acceleration();
-        damping.linear_damping = ground_state.damping();
+        resistance.0 = ground_state.resistance();
     }
 }
 
