@@ -41,7 +41,7 @@ fn main() {
 #[derive(Component)]
 struct Player;
 
-#[derive(Component)]
+#[derive(Debug, Component, PartialEq, Eq)]
 enum PlatformBehavior {
     Normal,
     Slippery,
@@ -145,9 +145,10 @@ fn jump(mut player_q: Query<&mut ExternalImpulse, With<Player>>, input_action: R
 
 fn set_platform(
     mut player_q: Query<(&mut PlatformBehavior, &Transform), With<Player>>,
+    platform_q: Query<&Platform>,
     physics: Res<PhysicsContext>,
 ) {
-    let (mut platform, transform) = player_q.single_mut();
+    let (mut platform_behavior, transform) = player_q.single_mut();
 
     let ray_hit = physics.cast_ray(
         transform.translation + Vec3::Y * 0.1,
@@ -157,7 +158,18 @@ fn set_platform(
         PhysicsLayer::PLATFORM.into(),
     );
 
-    dbg!(ray_hit);
+    if let Some((platform_entity, _)) = ray_hit {
+        let platform = platform_q.get(platform_entity).unwrap();
+        let behavior = match platform {
+            Platform::Ground => PlatformBehavior::Normal,
+            Platform::Ice => PlatformBehavior::Slippery,
+        };
+
+        if *platform_behavior != behavior {
+            dbg!(&behavior);
+            *platform_behavior = behavior;
+        }
+    }
 }
 
 #[derive(Default, Component)]
