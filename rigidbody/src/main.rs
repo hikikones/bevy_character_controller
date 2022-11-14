@@ -39,20 +39,25 @@ fn main() {
         .run();
 }
 
+const BASE_SPEED: f32 = 10.0;
+const BASE_ACCELERATION: f32 = BASE_SPEED * 3.0;
+const BASE_RESISTANCE: f32 = 0.4;
+const BASE_JUMP_HEIGHT: f32 = 3.0;
+
 #[derive(Component)]
 struct Player;
 
 #[derive(Component)]
-struct Speed(f32);
+struct SpeedScalar(f32);
 
 #[derive(Component)]
-struct Acceleration(f32);
+struct AccelerationScalar(f32);
 
 #[derive(Component)]
-struct Resistance(f32);
+struct ResistanceScalar(f32);
 
 #[derive(Component)]
-struct JumpHeight(f32);
+struct JumpHeightScalar(f32);
 
 #[derive(Component, Debug, PartialEq, Eq)]
 enum GroundState {
@@ -62,18 +67,18 @@ enum GroundState {
 }
 
 impl GroundState {
-    const fn acceleration(&self) -> f32 {
+    const fn acceleration_scalar(&self) -> f32 {
         match self {
-            GroundState::None => 10.0,
-            GroundState::Normal => 30.0,
-            GroundState::Slippery => 5.0,
+            GroundState::None => 0.5,
+            GroundState::Normal => 1.0,
+            GroundState::Slippery => 0.2,
         }
     }
 
-    const fn resistance(&self) -> f32 {
+    const fn resistance_scalar(&self) -> f32 {
         match self {
             GroundState::None => 0.0,
-            GroundState::Normal => 0.4,
+            GroundState::Normal => 1.0,
             GroundState::Slippery => 0.01,
         }
     }
@@ -82,10 +87,10 @@ impl GroundState {
 #[derive(Bundle)]
 struct PlayerBundle {
     marker: Player,
-    speed: Speed,
-    acceleration: Acceleration,
-    resistance: Resistance,
-    jump_height: JumpHeight,
+    speed_scalar: SpeedScalar,
+    acceleration_scalar: AccelerationScalar,
+    resistance_scalar: ResistanceScalar,
+    jump_height_scalar: JumpHeightScalar,
     ground_state: GroundState,
 }
 
@@ -96,10 +101,10 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
         .insert_bundle(TransformBundle::default())
         .insert_bundle(PlayerBundle {
             marker: Player,
-            speed: Speed(10.0),
-            acceleration: Acceleration(20.0),
-            resistance: Resistance(0.0),
-            jump_height: JumpHeight(2.0),
+            speed_scalar: SpeedScalar(1.0),
+            acceleration_scalar: AccelerationScalar(1.0),
+            resistance_scalar: ResistanceScalar(1.0),
+            jump_height_scalar: JumpHeightScalar(1.0),
             ground_state: GroundState::Normal,
         })
         .insert_bundle((
@@ -145,53 +150,37 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
 }
 
 fn movement(
-    mut player_q: Query<(&mut Velocity, &Speed, &Acceleration, &Resistance), With<Player>>,
+    mut player_q: Query<
+        (
+            &mut Velocity,
+            &SpeedScalar,
+            &AccelerationScalar,
+            &ResistanceScalar,
+        ),
+        With<Player>,
+    >,
     input: Res<InputMovement>,
     tick: Res<SimulationTick>,
 ) {
-    let (mut velocity, speed, acceleration, resistance) = player_q.single_mut();
+    let (mut velocity, speed_scalar, acceleration_scalar, resistance_scalar) =
+        player_q.single_mut();
 
     if input.is_zero() {
-        velocity.linvel *= (1.0 - resistance.0);
+        velocity.linvel *= 1.0 - (BASE_RESISTANCE * resistance_scalar.0);
         return;
     }
 
     let direction = input.x0z();
     let current_velocity = velocity.linvel.x0z();
-    let target_velocity = direction * speed.0;
+    let target_velocity = direction * BASE_SPEED * speed_scalar.0;
     // let drag = current_velocity.normalize_or_zero() * resistance.0;
-    let max_delta = acceleration.0 * tick.rate();
+    let max_delta = BASE_ACCELERATION * acceleration_scalar.0 * tick.rate();
 
     // let actual_velocity =
     //     current_velocity.move_towards(target_velocity, max_delta) * (1.0 - resistance.0);
     // let actual_velocity = current_velocity.move_towards(target_velocity, max_delta * resistance.0);
     // velocity.linvel = actual_velocity.x_z(velocity.linvel.y);
 
-    velocity.linvel = current_velocity
-        .move_towards(target_velocity, max_delta)
-        .x_z(velocity.linvel.y);
-}
-
-fn resistance(
-    mut player_q: Query<(&mut Velocity, &Speed, &Acceleration, &Resistance), With<Player>>,
-    input: Res<InputMovement>,
-    tick: Res<SimulationTick>,
-) {
-    if input.is_zero() {
-        // return;
-    }
-
-    let (mut velocity, speed, acceleration, resistance) = player_q.single_mut();
-
-    let direction = input.x0z();
-    let current_velocity = velocity.linvel.x0z();
-    let target_velocity = direction * speed.0;
-    // let drag = current_velocity.normalize_or_zero() * resistance.0;
-    let max_delta = acceleration.0 * tick.rate();
-
-    // let new_velocity = current_velocity.move_towards(target_velocity, max_delta) - drag;
-
-    // velocity.linvel = new_velocity.x_z(velocity.linvel.y);
     velocity.linvel = current_velocity
         .move_towards(target_velocity, max_delta)
         .x_z(velocity.linvel.y);
@@ -217,12 +206,12 @@ fn rotation(
 }
 
 fn jump(
-    mut player_q: Query<(&mut ExternalImpulse, &JumpHeight), With<Player>>,
+    mut player_q: Query<(&mut ExternalImpulse, &JumpHeightScalar), With<Player>>,
     input_action: Res<InputAction>,
 ) {
     if let InputAction::Jump = *input_action {
-        let (mut impulse, jump_height) = player_q.single_mut();
-        impulse.impulse = Vec3::Y * f32::sqrt(2.0 * 9.81 * jump_height.0);
+        let (mut impulse, jump_height_scalar) = player_q.single_mut();
+        impulse.impulse = Vec3::Y * f32::sqrt(2.0 * 9.81 * BASE_JUMP_HEIGHT * jump_height_scalar.0);
     }
 }
 
@@ -257,14 +246,14 @@ fn set_ground(
 
 fn on_ground_change(
     mut player_q: Query<
-        (&GroundState, &mut Acceleration, &mut Resistance),
+        (&GroundState, &mut AccelerationScalar, &mut ResistanceScalar),
         (Changed<GroundState>, With<Player>),
     >,
 ) {
     if let Ok((ground_state, mut acceleration, mut resistance)) = player_q.get_single_mut() {
         dbg!(ground_state);
-        acceleration.0 = ground_state.acceleration();
-        resistance.0 = ground_state.resistance();
+        acceleration.0 = ground_state.acceleration_scalar();
+        resistance.0 = ground_state.resistance_scalar();
     }
 }
 
