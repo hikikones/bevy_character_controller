@@ -65,15 +65,15 @@ impl GroundState {
     const fn acceleration(&self) -> f32 {
         match self {
             GroundState::None => 10.0,
-            GroundState::Normal => 20.0,
-            GroundState::Slippery => 40.0,
+            GroundState::Normal => 30.0,
+            GroundState::Slippery => 5.0,
         }
     }
 
     const fn resistance(&self) -> f32 {
         match self {
-            GroundState::None => 1.0,
-            GroundState::Normal => 1.0,
+            GroundState::None => 0.0,
+            GroundState::Normal => 0.4,
             GroundState::Slippery => 0.01,
         }
     }
@@ -149,11 +149,12 @@ fn movement(
     input: Res<InputMovement>,
     tick: Res<SimulationTick>,
 ) {
-    if input.is_zero() {
-        // return;
-    }
-
     let (mut velocity, speed, acceleration, resistance) = player_q.single_mut();
+
+    if input.is_zero() {
+        velocity.linvel *= (1.0 - resistance.0);
+        return;
+    }
 
     let direction = input.x0z();
     let current_velocity = velocity.linvel.x0z();
@@ -163,12 +164,12 @@ fn movement(
 
     // let actual_velocity =
     //     current_velocity.move_towards(target_velocity, max_delta) * (1.0 - resistance.0);
-    let actual_velocity = current_velocity.move_towards(target_velocity, max_delta * resistance.0);
-    velocity.linvel = actual_velocity.x_z(velocity.linvel.y);
+    // let actual_velocity = current_velocity.move_towards(target_velocity, max_delta * resistance.0);
+    // velocity.linvel = actual_velocity.x_z(velocity.linvel.y);
 
-    // velocity.linvel = current_velocity
-    //     .move_towards(target_velocity, max_delta)
-    //     .x_z(velocity.linvel.y);
+    velocity.linvel = current_velocity
+        .move_towards(target_velocity, max_delta)
+        .x_z(velocity.linvel.y);
 }
 
 fn resistance(
