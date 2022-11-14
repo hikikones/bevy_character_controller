@@ -33,6 +33,7 @@ fn main() {
             SimulationStage::PostUpdate,
             SystemSet::new()
                 .with_system(set_ground)
+                .with_system(on_ground_change.after(set_ground))
                 .with_system(lerp_set),
         )
         .run();
@@ -41,19 +42,67 @@ fn main() {
 #[derive(Component)]
 struct Player;
 
-#[derive(Debug, Component, PartialEq, Eq)]
+#[derive(Component)]
+struct Speed(f32);
+
+#[derive(Component)]
+struct Acceleration(f32);
+
+#[derive(Component)]
+struct Resistance(f32);
+
+#[derive(Component)]
+struct JumpHeight(f32);
+
+#[derive(Component, Debug, PartialEq, Eq)]
 enum GroundState {
     None,
     Normal,
     Slippery,
 }
 
+impl GroundState {
+    const fn acceleration(&self) -> f32 {
+        match self {
+            GroundState::None => 10.0,
+            GroundState::Normal => 100.0,
+            GroundState::Slippery => 5.0,
+        }
+    }
+
+    const fn damping(&self) -> f32 {
+        match self {
+            GroundState::None => 1.0,
+            GroundState::Normal => 10.0,
+            GroundState::Slippery => 0.1,
+        }
+    }
+}
+
+#[derive(Bundle)]
+struct PlayerBundle {
+    marker: Player,
+    speed: Speed,
+    acceleration: Acceleration,
+    resistance: Resistance,
+    jump_height: JumpHeight,
+    ground_state: GroundState,
+}
+
 fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
     // Player
     commands
-        .spawn_bundle(TransformBundle::default())
+        .spawn()
+        .insert_bundle(TransformBundle::default())
+        .insert_bundle(PlayerBundle {
+            marker: Player,
+            speed: Speed(10.0),
+            acceleration: Acceleration(20.0),
+            resistance: Resistance(0.0),
+            jump_height: JumpHeight(2.0),
+            ground_state: GroundState::Normal,
+        })
         .insert_bundle((
-            Player,
             GroundState::Normal,
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
@@ -61,10 +110,7 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
                 memberships: PhysicsLayer::PLAYER.into(),
                 filters: PhysicsLayer::all().into(),
             },
-            // Friction {
-            //     coefficient: 0.0,
-            //     combine_rule: CoefficientCombineRule::Average,
-            // },
+            Friction::coefficient(0.0),
             // Restitution::default(),
             Damping::default(),
             // ColliderMassProperties::default(),
@@ -89,7 +135,7 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
         };
         commands.entity(entity).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(friction),
+            Friction::coefficient(0.0),
             CollisionGroups {
                 memberships: PhysicsLayer::PLATFORM.into(),
                 filters: PhysicsLayer::all().into(),
@@ -98,25 +144,28 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
     }
 }
 
-const MAX_SPEED: f32 = 10.0;
-const MAX_ACCELERATION: f32 = MAX_SPEED * 2.0;
-const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
-const JUMP_HEIGHT: f32 = 2.0;
-
 fn movement(
-    mut player_q: Query<&mut Velocity, With<Player>>,
+    mut player_q: Query<(&mut Velocity, &Speed, &Acceleration, &Resistance), With<Player>>,
     input: Res<InputMovement>,
     tick: Res<SimulationTick>,
 ) {
-    let mut velocity = player_q.single_mut();
+    if input.is_zero() {
+        return;
+    }
 
-    let input = input.x0z();
-    let target = input * MAX_SPEED;
-    let max_delta = MAX_ACCELERATION * tick.rate();
+    let (mut velocity, speed, acceleration, resistance) = player_q.single_mut();
 
-    velocity.linvel = velocity
-        .linvel
-        .move_towards(target, max_delta)
+    let direction = input.x0z();
+    let current_velocity = velocity.linvel.x0z();
+    let target_velocity = direction * speed.0;
+    // let drag = current_velocity.normalize_or_zero() * resistance.0;
+    let max_delta = acceleration.0 * tick.rate();
+
+    // let new_velocity = current_velocity.move_towards(target_velocity, max_delta) - drag;
+
+    // velocity.linvel = new_velocity.x_z(velocity.linvel.y);
+    velocity.linvel = current_velocity
+        .move_towards(target_velocity, max_delta)
         .x_z(velocity.linvel.y);
 }
 
@@ -129,6 +178,8 @@ fn rotation(
         return;
     }
 
+    const ROTATION_SPEED: f32 = 15.0;
+
     let mut transform = player_q.single_mut();
     transform.rotation = Quat::slerp(
         transform.rotation,
@@ -137,10 +188,13 @@ fn rotation(
     );
 }
 
-fn jump(mut player_q: Query<&mut ExternalImpulse, With<Player>>, input_action: Res<InputAction>) {
+fn jump(
+    mut player_q: Query<(&mut ExternalImpulse, &JumpHeight), With<Player>>,
+    input_action: Res<InputAction>,
+) {
     if let InputAction::Jump = *input_action {
-        let force = Vec3::Y * f32::sqrt(2.0 * 9.81 * JUMP_HEIGHT);
-        player_q.single_mut().impulse = force;
+        let (mut impulse, jump_height) = player_q.single_mut();
+        impulse.impulse = Vec3::Y * f32::sqrt(2.0 * 9.81 * jump_height.0);
     }
 }
 
@@ -169,8 +223,20 @@ fn set_ground(
     };
 
     if *ground_state != state {
-        dbg!(&state);
         *ground_state = state;
+    }
+}
+
+fn on_ground_change(
+    mut player_q: Query<
+        (&GroundState, &mut Acceleration, &mut Damping),
+        (Changed<GroundState>, With<Player>),
+    >,
+) {
+    if let Ok((ground_state, mut acceleration, mut damping)) = player_q.get_single_mut() {
+        dbg!(ground_state);
+        acceleration.0 = ground_state.acceleration();
+        damping.linear_damping = ground_state.damping();
     }
 }
 

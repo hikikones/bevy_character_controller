@@ -2,9 +2,9 @@ use bevy::{ecs::schedule::ShouldRun, prelude::*};
 use bevy_rapier3d::prelude::*;
 
 pub use bevy_rapier3d::prelude::{
-    Ccd, Collider, CollisionGroups, Damping, ExternalForce, ExternalImpulse, Friction, Group,
-    InteractionGroups, LockedAxes, QueryFilter, RapierContext as PhysicsContext, RigidBody,
-    Sleeping, Velocity,
+    Ccd, CoefficientCombineRule, Collider, CollisionGroups, Damping, ExternalForce,
+    ExternalImpulse, Friction, Group, InteractionGroups, LockedAxes, QueryFilter,
+    RapierContext as PhysicsContext, RigidBody, Sleeping, Velocity,
 };
 
 pub struct SimulationPlugin;
@@ -51,7 +51,7 @@ pub enum SimulationStage {
 #[derive(Default)]
 pub struct SimulationTick(f32);
 
-const SIMULATION_TICK_RATE: f32 = 1.0 / 5.0;
+const SIMULATION_TICK_RATE: f32 = 1.0 / 20.0;
 
 impl SimulationTick {
     pub const fn rate(&self) -> f32 {
