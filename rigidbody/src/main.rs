@@ -32,7 +32,7 @@ fn main() {
         .add_system_set_to_stage(
             SimulationStage::PostUpdate,
             SystemSet::new()
-                .with_system(set_platform)
+                .with_system(set_ground)
                 .with_system(lerp_set),
         )
         .run();
@@ -42,18 +42,18 @@ fn main() {
 struct Player;
 
 #[derive(Debug, Component, PartialEq, Eq)]
-enum PlatformBehavior {
+enum GroundState {
     Normal,
     Slippery,
 }
 
-fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
+fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
     // Player
     commands
         .spawn_bundle(TransformBundle::default())
         .insert_bundle((
             Player,
-            PlatformBehavior::Normal,
+            GroundState::Normal,
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
             CollisionGroups {
@@ -83,8 +83,8 @@ fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
     // Platforms
     for (entity, platform) in platform_q.iter() {
         let friction = match platform {
-            Platform::Ground => 1.0,
-            Platform::Ice => 0.0,
+            PlatformName::Ground => 1.0,
+            PlatformName::Ice => 0.0,
         };
         commands.entity(entity).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),
@@ -143,12 +143,12 @@ fn jump(mut player_q: Query<&mut ExternalImpulse, With<Player>>, input_action: R
     }
 }
 
-fn set_platform(
-    mut player_q: Query<(&mut PlatformBehavior, &Transform), With<Player>>,
-    platform_q: Query<&Platform>,
+fn set_ground(
+    mut player_q: Query<(&mut GroundState, &Transform), With<Player>>,
+    platform_q: Query<&PlatformName>,
     physics: Res<PhysicsContext>,
 ) {
-    let (mut platform_behavior, transform) = player_q.single_mut();
+    let (mut ground_state, transform) = player_q.single_mut();
 
     let ray_hit = physics.cast_ray(
         transform.translation + Vec3::Y * 0.1,
@@ -160,14 +160,14 @@ fn set_platform(
 
     if let Some((platform_entity, _)) = ray_hit {
         let platform = platform_q.get(platform_entity).unwrap();
-        let behavior = match platform {
-            Platform::Ground => PlatformBehavior::Normal,
-            Platform::Ice => PlatformBehavior::Slippery,
+        let state = match platform {
+            PlatformName::Ground => GroundState::Normal,
+            PlatformName::Ice => GroundState::Slippery,
         };
 
-        if *platform_behavior != behavior {
-            dbg!(&behavior);
-            *platform_behavior = behavior;
+        if *ground_state != state {
+            dbg!(&state);
+            *ground_state = state;
         }
     }
 }

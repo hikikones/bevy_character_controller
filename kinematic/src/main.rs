@@ -25,7 +25,7 @@ fn main() {
         .run();
 }
 
-fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
+fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
     commands.entity(player).insert_bundle((
@@ -36,8 +36,8 @@ fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
     // Platforms
     for (entity, platform) in platform_q.iter() {
         let friction = match platform {
-            Platform::Ground => 1.0,
-            Platform::Ice => 0.0,
+            PlatformName::Ground => 1.0,
+            PlatformName::Ice => 0.0,
         };
         commands.entity(entity).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),

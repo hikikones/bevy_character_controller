@@ -11,7 +11,7 @@ impl Plugin for PlatformPlugin {
 }
 
 #[derive(Component)]
-pub enum Platform {
+pub enum PlatformName {
     Ground,
     Ice,
 }
@@ -29,7 +29,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert(Platform::Ground);
+        .insert(PlatformName::Ground);
 
     // Ice
     commands
@@ -43,5 +43,5 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert(Platform::Ice);
+        .insert(PlatformName::Ice);
 }
