@@ -3,7 +3,8 @@ use bevy_rapier3d::prelude::*;
 
 pub use bevy_rapier3d::prelude::{
     Ccd, Collider, CollisionGroups, Damping, ExternalForce, ExternalImpulse, Friction, Group,
-    LockedAxes, RigidBody, Sleeping, Velocity,
+    InteractionGroups, LockedAxes, QueryFilter, RapierContext as PhysicsContext, RigidBody,
+    Sleeping, Velocity,
 };
 
 pub struct SimulationPlugin;

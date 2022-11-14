@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use super::simulation::Group;
+use super::simulation::*;
 
 bitflags! {
     pub struct PhysicsLayer: u32 {
@@ -11,6 +11,27 @@ bitflags! {
 
 impl From<PhysicsLayer> for Group {
     fn from(layer: PhysicsLayer) -> Self {
-        unsafe { Group::from_bits_unchecked(layer.bits) }
+        unsafe { Self::from_bits_unchecked(layer.bits) }
+    }
+}
+
+impl From<PhysicsLayer> for CollisionGroups {
+    fn from(layer: PhysicsLayer) -> Self {
+        Self::new(layer.into(), Group::all())
+    }
+}
+
+impl From<PhysicsLayer> for InteractionGroups {
+    fn from(layer: PhysicsLayer) -> Self {
+        Self::new(layer.bits.into(), layer.bits.into())
+    }
+}
+
+impl From<PhysicsLayer> for QueryFilter<'_> {
+    fn from(layer: PhysicsLayer) -> Self {
+        Self {
+            groups: Some(layer.into()),
+            ..Default::default()
+        }
     }
 }

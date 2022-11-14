@@ -31,7 +31,9 @@ fn main() {
         )
         .add_system_set_to_stage(
             SimulationStage::PostUpdate,
-            SystemSet::new().with_system(lerp_set),
+            SystemSet::new()
+                .with_system(set_platform)
+                .with_system(lerp_set),
         )
         .run();
 }
@@ -39,12 +41,19 @@ fn main() {
 #[derive(Component)]
 struct Player;
 
+#[derive(Component)]
+enum PlatformBehavior {
+    Normal,
+    Slippery,
+}
+
 fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
     // Player
     commands
         .spawn_bundle(TransformBundle::default())
         .insert_bundle((
             Player,
+            PlatformBehavior::Normal,
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
             CollisionGroups {
@@ -132,6 +141,23 @@ fn jump(mut player_q: Query<&mut ExternalImpulse, With<Player>>, input_action: R
         let force = Vec3::Y * f32::sqrt(2.0 * 9.81 * JUMP_HEIGHT);
         player_q.single_mut().impulse = force;
     }
+}
+
+fn set_platform(
+    mut player_q: Query<(&mut PlatformBehavior, &Transform), With<Player>>,
+    physics: Res<PhysicsContext>,
+) {
+    let (mut platform, transform) = player_q.single_mut();
+
+    let ray_hit = physics.cast_ray(
+        transform.translation + Vec3::Y * 0.1,
+        -Vec3::Y,
+        0.2,
+        true,
+        PhysicsLayer::PLATFORM.into(),
+    );
+
+    dbg!(ray_hit);
 }
 
 #[derive(Default, Component)]
