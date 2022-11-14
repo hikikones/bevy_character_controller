@@ -8,3 +8,4 @@ bevy = { workspace = true }
 bevy_rapier3d = { workspace = true }
 bevy_extensions = { workspace = true }
 bootstrap = { workspace = true }
+bitflags = { workspace = true }

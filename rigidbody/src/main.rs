@@ -3,8 +3,10 @@ use bevy::prelude::*;
 use bevy_extensions::*;
 use bootstrap::*;
 
+mod layer;
 mod simulation;
 
+use layer::PhysicsLayer;
 use simulation::*;
 
 fn main() {
@@ -45,7 +47,10 @@ fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
             Player,
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
-            CollisionGroups::default(),
+            CollisionGroups {
+                memberships: PhysicsLayer::PLAYER.into(),
+                filters: PhysicsLayer::all().into(),
+            },
             // Friction {
             //     coefficient: 0.0,
             //     combine_rule: CoefficientCombineRule::Average,
@@ -75,6 +80,10 @@ fn setup(platform_q: Query<(Entity, &Platform)>, mut commands: Commands) {
         commands.entity(entity).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(friction),
+            CollisionGroups {
+                memberships: PhysicsLayer::PLATFORM.into(),
+                filters: PhysicsLayer::all().into(),
+            },
         ));
     }
 }

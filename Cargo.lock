@@ -269,6 +269,7 @@ dependencies = [
  "bevy",
  "bevy_extensions",
  "bevy_rapier3d",
+ "bitflags",
  "bootstrap",
 ]
 
@@ -2778,6 +2779,7 @@ dependencies = [
  "bevy",
  "bevy_extensions",
  "bevy_rapier3d",
+ "bitflags",
  "bootstrap",
 ]
 
