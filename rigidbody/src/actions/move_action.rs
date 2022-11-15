@@ -2,13 +2,15 @@ use bevy::prelude::*;
 use bevy_extensions::{FromLookExt, MoveTowardsTransformExt};
 use bevy_sequential_actions::*;
 
+use crate::physics::PhysicsTick;
+
 use super::IntoValue;
 
 pub struct MoveActionPlugin;
 
 impl Plugin for MoveActionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(movement).add_system(rotation);
+        app.add_system_to_stage(PhysicsStage::Update, wait);
     }
 }
 
@@ -99,11 +101,11 @@ struct Rotate(Quat);
 
 fn movement(
     mut move_q: Query<(Entity, &mut Transform, &Target, &Speed)>,
-    time: Res<Time>,
     mut commands: Commands,
+    tick: Res<PhysicsTick>,
 ) {
     for (agent, mut transform, target, speed) in move_q.iter_mut() {
-        transform.move_towards(target.0, speed.0 * time.delta_seconds());
+        transform.move_towards(target.0, speed.0 * tick.rate());
 
         if transform.translation == target.0 {
             commands.actions(agent).next();
@@ -111,12 +113,8 @@ fn movement(
     }
 }
 
-fn rotation(mut rot_q: Query<(&mut Transform, &Speed, &Rotate)>, time: Res<Time>) {
+fn rotation(mut rot_q: Query<(&mut Transform, &Speed, &Rotate)>, tick: Res<PhysicsTick>) {
     for (mut transform, speed, rotate) in rot_q.iter_mut() {
-        transform.rotation = Quat::slerp(
-            transform.rotation,
-            rotate.0,
-            speed.0 * 2.0 * time.delta_seconds(),
-        );
+        transform.rotation = Quat::slerp(transform.rotation, rotate.0, speed.0 * 2.0 * tick.rate());
     }
 }
