@@ -1,26 +1,20 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
 
+use bevy_bootstrap::*;
 use bevy_extensions::*;
-use bootstrap::*;
+use bevy_physics::*;
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            ..Default::default()
-        })
-        .insert_resource(RapierConfiguration {
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(PhysicsPlugin)
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
-            SystemSet::new().with_system(movement), // .with_system(rotation)
-                                                    // .with_system(jump),
+            SystemSet::new().with_system(movement),
+            // .with_system(rotation)
+            // .with_system(jump),
         )
         .run();
 }

@@ -1,0 +1,13 @@
+[package]
+name = "bevy_physics"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bevy = { workspace = true }
+bevy_rapier3d = { version = "0.18", features = [
+    "parallel",
+    "enhanced-determinism",
+    "debug-render",
+] }
+bitflags = { workspace = true }

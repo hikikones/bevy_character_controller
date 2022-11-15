@@ -1,7 +1,6 @@
 use bevy::prelude::*;
+use bevy_physics::{PhysicsStage, PhysicsTick};
 use bevy_sequential_actions::*;
-
-use crate::physics::{PhysicsStage, PhysicsTick};
 
 use super::IntoValue;
 

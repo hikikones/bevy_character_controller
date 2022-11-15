@@ -1,14 +1,10 @@
 use bevy::{prelude::*, window::PresentMode};
 
+use bevy_bootstrap::*;
 use bevy_extensions::*;
-use bootstrap::*;
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            present_mode: PresentMode::AutoNoVsync,
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)

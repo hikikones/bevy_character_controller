@@ -1,8 +1,9 @@
 [package]
-name = "bootstrap"
+name = "bevy_bootstrap"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 bevy = { workspace = true }
+bevy_physics = { workspace = true }
 bevy_extensions = { workspace = true }

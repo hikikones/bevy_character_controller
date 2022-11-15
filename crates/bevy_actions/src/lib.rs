@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy_extensions::RandomExt;
 
+pub use bevy_sequential_actions::*;
+
 mod lerp_action;
 mod move_action;
 mod wait_action;

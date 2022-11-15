@@ -195,6 +195,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_actions"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-sequential-actions",
+ "bevy_extensions",
+ "bevy_physics",
+]
+
+[[package]]
 name = "bevy_animation"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -272,15 +282,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_bootstrap"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_extensions",
+ "bevy_physics",
+]
+
+[[package]]
 name = "bevy_character_controller"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-sequential-actions",
+ "bevy_actions",
+ "bevy_bootstrap",
  "bevy_extensions",
- "bevy_rapier3d",
+ "bevy_physics",
  "bitflags",
- "bootstrap",
  "fastrand",
 ]
 
@@ -558,6 +577,15 @@ dependencies = [
  "bitflags",
  "bytemuck",
  "radsort",
+]
+
+[[package]]
+name = "bevy_physics"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_rapier3d",
+ "bitflags",
 ]
 
 [[package]]
@@ -900,14 +928,6 @@ name = "block"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
-
-[[package]]
-name = "bootstrap"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_extensions",
-]
 
 [[package]]
 name = "bumpalo"
@@ -1922,9 +1942,10 @@ name = "kinematic"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_actions",
+ "bevy_bootstrap",
  "bevy_extensions",
- "bevy_rapier3d",
- "bootstrap",
+ "bevy_physics",
 ]
 
 [[package]]
@@ -2044,8 +2065,9 @@ name = "manual"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_actions",
+ "bevy_bootstrap",
  "bevy_extensions",
- "bootstrap",
 ]
 
 [[package]]
@@ -2790,11 +2812,11 @@ name = "rigidbody"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-sequential-actions",
+ "bevy_actions",
+ "bevy_bootstrap",
  "bevy_extensions",
- "bevy_rapier3d",
+ "bevy_physics",
  "bitflags",
- "bootstrap",
 ]
 
 [[package]]

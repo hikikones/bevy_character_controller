@@ -1,23 +1,15 @@
 use bevy::prelude::*;
 
+use bevy_actions::*;
+use bevy_bootstrap::*;
 use bevy_extensions::*;
-use bevy_sequential_actions::*;
-use bootstrap::*;
-
-mod actions;
-mod physics;
-
-use actions::*;
-use physics::*;
+use bevy_physics::*;
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            ..Default::default()
-        })
         .add_plugins(DefaultPlugins)
-        .add_plugin(BootstrapPlugin)
         .add_plugin(PhysicsPlugin)
+        .add_plugin(BootstrapPlugin)
         .add_plugin(ActionsPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
