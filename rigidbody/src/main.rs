@@ -94,7 +94,39 @@ struct PlayerBundle {
     ground_state: GroundState,
 }
 
-fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
+fn setup(
+    platform_q: Query<(Entity, &PlatformName)>,
+    block_q: Query<(Entity, &BlockName)>,
+    mut commands: Commands,
+) {
+    // Platforms
+    for (entity, platform) in platform_q.iter() {
+        let friction = match platform {
+            PlatformName::Ground => 1.0,
+            PlatformName::Ice => 0.0,
+        };
+        commands.entity(entity).insert_bundle((
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(0.0),
+            CollisionGroups {
+                memberships: PhysicsLayer::PLATFORM.into(),
+                filters: PhysicsLayer::all().into(),
+            },
+        ));
+    }
+
+    // Blocks
+    for (entity, block) in block_q.iter() {
+        let collider = match block {
+            BlockName::Cube => Collider::cuboid(0.5, 0.5, 0.5),
+        };
+        commands.entity(entity).insert_bundle((
+            collider,
+            Friction::coefficient(0.0),
+            CollisionGroups::default(),
+        ));
+    }
+
     // Player
     commands
         .spawn()
@@ -131,22 +163,6 @@ fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
     // Actor
     let actor = commands.spawn_actor(ActorConfig::default());
     commands.entity(actor).insert(Lerp::default());
-
-    // Platforms
-    for (entity, platform) in platform_q.iter() {
-        let friction = match platform {
-            PlatformName::Ground => 1.0,
-            PlatformName::Ice => 0.0,
-        };
-        commands.entity(entity).insert_bundle((
-            Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
-            CollisionGroups {
-                memberships: PhysicsLayer::PLATFORM.into(),
-                filters: PhysicsLayer::all().into(),
-            },
-        ));
-    }
 }
 
 fn movement(

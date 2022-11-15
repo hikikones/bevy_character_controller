@@ -186,6 +186,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-sequential-actions"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a604c99336c3f5e97aec6295e509563e83a4b46e5217d825c015ff105c30dadb"
+dependencies = [
+ "bevy_ecs",
+]
+
+[[package]]
 name = "bevy_animation"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -267,6 +276,7 @@ name = "bevy_character_controller"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-sequential-actions",
  "bevy_extensions",
  "bevy_rapier3d",
  "bitflags",

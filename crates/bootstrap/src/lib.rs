@@ -2,12 +2,14 @@ use bevy::prelude::*;
 
 pub mod actor;
 pub mod assets;
+pub mod block;
 pub mod camera;
 pub mod input;
 pub mod platform;
 
 pub use actor::*;
 pub use assets::*;
+pub use block::*;
 pub use camera::*;
 pub use input::*;
 pub use platform::*;
@@ -18,6 +20,7 @@ impl Plugin for BootstrapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(assets::AssetsPlugin)
             .add_plugin(platform::PlatformPlugin)
+            .add_plugin(block::BlockPlugin)
             .add_plugin(camera::CameraPlugin)
             .add_plugin(input::InputPlugin)
             .add_startup_system(spawn_light)
