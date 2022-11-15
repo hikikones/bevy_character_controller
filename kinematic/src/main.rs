@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_actions::*;
 use bevy_bootstrap::*;
-use bevy_extensions::*;
+// use bevy_extensions::*;
 use bevy_physics::*;
 
 fn main() {
@@ -31,7 +31,7 @@ fn setup(mut commands: Commands) {
 }
 
 const MAX_SPEED: f32 = 10.0;
-const MAX_ACCELERATION: f32 = MAX_SPEED * 2.0;
+// const MAX_ACCELERATION: f32 = MAX_SPEED * 2.0;
 // const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
 // const JUMP_HEIGHT: f32 = 2.0;
 

@@ -78,4 +78,28 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
         ));
+
+    // Spinner
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: assets.mesh(MeshName::Cube),
+            material: assets.material(MaterialName::SeaGreen),
+            transform: Transform {
+                translation: Vec3::X * 5.0,
+                scale: Vec3::new(5.0, 3.0, 2.5),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(PlatformName::Ground)
+        .insert_bundle((
+            RigidBody::KinematicVelocityBased,
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(0.0),
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
+            Velocity {
+                linvel: Vec3::ZERO,
+                angvel: Vec3::X * 1.0,
+            },
+        ));
 }
