@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 use bevy_extensions::RandomExt;
 
+mod lerp_action;
 mod move_action;
 mod wait_action;
 
+pub use lerp_action::*;
 pub use move_action::*;
 pub use wait_action::*;
 
@@ -12,7 +14,8 @@ pub struct ActionsPlugin;
 impl Plugin for ActionsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(WaitActionPlugin)
-            .add_plugin(MoveActionPlugin);
+            .add_plugin(MoveActionPlugin)
+            .add_plugin(LerpActionPlugin);
     }
 }
 

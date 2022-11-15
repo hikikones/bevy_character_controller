@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_extensions::*;
+use bevy_sequential_actions::*;
 use bootstrap::*;
 
 mod actions;
@@ -17,6 +18,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(BootstrapPlugin)
         .add_plugin(PhysicsPlugin)
+        .add_plugin(ActionsPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
@@ -89,12 +91,12 @@ struct PlayerBundle {
 
 fn setup(
     platform_q: Query<Entity, With<PlatformName>>,
-    block_q: Query<Entity, With<BlockName>>,
+    block_q: Query<(Entity, &Transform), With<BlockName>>,
     mut commands: Commands,
 ) {
     // Platforms
-    for entity in platform_q.iter() {
-        commands.entity(entity).insert_bundle((
+    for platform in platform_q.iter() {
+        commands.entity(platform).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
@@ -102,12 +104,42 @@ fn setup(
     }
 
     // Blocks
-    for entity in block_q.iter() {
-        commands.entity(entity).insert_bundle((
-            Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
-            CollisionGroups::from(PhysicsLayer::BLOCK),
-        ));
+    for (block, transform) in block_q.iter() {
+        let block_sim = commands
+            .spawn()
+            .insert_bundle(TransformBundle::from_transform(*transform))
+            .insert_bundle(ActionsBundle::default())
+            .insert_bundle((
+                Collider::cuboid(0.5, 0.5, 0.5),
+                Friction::coefficient(0.0),
+                CollisionGroups::from(PhysicsLayer::BLOCK),
+            ))
+            .id();
+
+        commands
+            .actions(block_sim)
+            .config(AddConfig {
+                repeat: Repeat::Forever,
+                ..Default::default()
+            })
+            .add(WaitAction::new(1.0))
+            .add(LerpAction::new(LerpConfig {
+                target: block_sim,
+                lerp_type: LerpType::Position(Vec3::new(5.5, 0.5, -2.5)),
+                duration: 2.0,
+            }))
+            .add(WaitAction::new(1.0))
+            .add(LerpAction::new(LerpConfig {
+                target: block_sim,
+                lerp_type: LerpType::Position(Vec3::new(-5.5, 0.5, -2.5)),
+                duration: 2.0,
+            }));
+
+        commands.entity(block).insert(Interpolation {
+            target: block_sim,
+            translate: true,
+            rotate: false,
+        });
     }
 
     // Player

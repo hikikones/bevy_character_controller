@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_extensions::{FromLookExt, MoveTowardsTransformExt};
 use bevy_sequential_actions::*;
 
-use crate::physics::PhysicsTick;
+use crate::physics::{PhysicsStage, PhysicsTick};
 
 use super::IntoValue;
 
@@ -10,7 +10,10 @@ pub struct MoveActionPlugin;
 
 impl Plugin for MoveActionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(PhysicsStage::Update, wait);
+        app.add_system_set_to_stage(
+            PhysicsStage::Update,
+            SystemSet::new().with_system(movement).with_system(rotation),
+        );
     }
 }
 
