@@ -37,7 +37,11 @@ impl Plugin for SimulationPlugin {
                 SimulationStage::PostUpdate,
                 SystemStage::parallel().with_run_criteria(run_criteria),
             )
-            .add_system_to_stage(CoreStage::Last, tick);
+            .add_system_to_stage(CoreStage::Last, tick)
+            // Interpolation
+            .add_system_to_stage(CoreStage::PreUpdate, setup_interpolation)
+            .add_system_to_stage(CoreStage::Update, interpolate)
+            .add_system_to_stage(SimulationStage::PostUpdate, update_interpolation);
     }
 }
 
@@ -51,7 +55,7 @@ pub enum SimulationStage {
 #[derive(Default)]
 pub struct SimulationTick(f32);
 
-const SIMULATION_TICK_RATE: f32 = 1.0 / 20.0;
+const SIMULATION_TICK_RATE: f32 = 1.0 / 10.0;
 
 impl SimulationTick {
     pub const fn rate(&self) -> f32 {
@@ -75,5 +79,50 @@ fn run_criteria(tick: Res<SimulationTick>) -> ShouldRun {
     match tick.0 >= SIMULATION_TICK_RATE {
         true => ShouldRun::Yes,
         false => ShouldRun::No,
+    }
+}
+
+#[derive(Component)]
+pub struct Interpolation {
+    pub target: Entity,
+    pub translate: bool,
+    pub rotate: bool,
+}
+
+#[derive(Component)]
+struct Lerp(Transform, Transform);
+
+fn setup_interpolation(
+    simu_added_q: Query<(Entity, &Transform), Added<Interpolation>>,
+    mut commands: Commands,
+) {
+    for (entity, transform) in simu_added_q.iter() {
+        commands.entity(entity).insert(Lerp(*transform, *transform));
+    }
+}
+
+fn interpolate(
+    mut lerp_q: Query<(&mut Transform, &Interpolation, &Lerp)>,
+    tick: Res<SimulationTick>,
+) {
+    for (mut transform, simu, lerp) in lerp_q.iter_mut() {
+        if simu.translate {
+            transform.translation =
+                Vec3::lerp(lerp.0.translation, lerp.1.translation, tick.percent());
+        }
+
+        if simu.rotate {
+            transform.rotation = Quat::slerp(lerp.0.rotation, lerp.1.rotation, tick.percent());
+        }
+    }
+}
+
+fn update_interpolation(
+    mut lerp_q: Query<(&mut Lerp, &Interpolation)>,
+    target_q: Query<&Transform>,
+) {
+    for (mut lerp, simu) in lerp_q.iter_mut() {
+        lerp.0 = lerp.1;
+        lerp.1 = *target_q.get(simu.target).unwrap();
     }
 }

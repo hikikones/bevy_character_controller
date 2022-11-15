@@ -281,6 +281,7 @@ dependencies = [
  "bevy_rapier3d",
  "bitflags",
  "bootstrap",
+ "fastrand",
 ]
 
 [[package]]
@@ -386,6 +387,7 @@ name = "bevy_extensions"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "fastrand",
 ]
 
 [[package]]
@@ -2787,6 +2789,7 @@ name = "rigidbody"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-sequential-actions",
  "bevy_extensions",
  "bevy_rapier3d",
  "bitflags",

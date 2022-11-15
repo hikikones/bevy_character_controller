@@ -3,9 +3,11 @@ use bevy::prelude::*;
 use bevy_extensions::*;
 use bootstrap::*;
 
+mod actions;
 mod layer;
 mod simulation;
 
+use actions::*;
 use layer::PhysicsLayer;
 use simulation::*;
 
@@ -20,10 +22,7 @@ fn main() {
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
-            SystemSet::new()
-                .with_system(rotation)
-                .with_system(jump)
-                .with_system(lerp),
+            SystemSet::new().with_system(rotation).with_system(jump), // .with_system(lerp),
         )
         .add_system_set_to_stage(
             SimulationStage::Update,
@@ -33,8 +32,7 @@ fn main() {
             SimulationStage::PostUpdate,
             SystemSet::new()
                 .with_system(set_ground)
-                .with_system(on_ground_change.after(set_ground))
-                .with_system(lerp_set),
+                .with_system(on_ground_change.after(set_ground)), // .with_system(lerp_set),
         )
         .run();
 }
@@ -108,10 +106,7 @@ fn setup(
         commands.entity(entity).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
-            CollisionGroups {
-                memberships: PhysicsLayer::PLATFORM.into(),
-                filters: PhysicsLayer::all().into(),
-            },
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
         ));
     }
 
@@ -123,12 +118,12 @@ fn setup(
         commands.entity(entity).insert_bundle((
             collider,
             Friction::coefficient(0.0),
-            CollisionGroups::default(),
+            CollisionGroups::from(PhysicsLayer::BLOCK),
         ));
     }
 
     // Player
-    commands
+    let player = commands
         .spawn()
         .insert_bundle(TransformBundle::default())
         .insert_bundle(PlayerBundle {
@@ -143,10 +138,7 @@ fn setup(
             GroundState::Normal,
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
-            CollisionGroups {
-                memberships: PhysicsLayer::PLAYER.into(),
-                filters: PhysicsLayer::all().into(),
-            },
+            CollisionGroups::from(PhysicsLayer::PLAYER),
             Friction::coefficient(0.0),
             // Restitution::default(),
             // Damping::default(),
@@ -158,11 +150,17 @@ fn setup(
             Ccd::enabled(),
             Sleeping::disabled(),
             LockedAxes::ROTATION_LOCKED,
-        ));
+        ))
+        .id();
 
     // Actor
     let actor = commands.spawn_actor(ActorConfig::default());
-    commands.entity(actor).insert(Lerp::default());
+    // commands.entity(actor).insert(Lerp::default());
+    commands.entity(actor).insert(Interpolation {
+        target: player,
+        translate: true,
+        rotate: false,
+    });
 }
 
 fn movement(

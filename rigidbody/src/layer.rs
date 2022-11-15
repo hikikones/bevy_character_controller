@@ -4,8 +4,9 @@ use super::simulation::*;
 
 bitflags! {
     pub struct PhysicsLayer: u32 {
-        const PLAYER      = 1 << 0;
-        const PLATFORM    = 1 << 1;
+        const PLAYER   = 1 << 0;
+        const PLATFORM = 1 << 1;
+        const BLOCK    = 1 << 2;
     }
 }
 
