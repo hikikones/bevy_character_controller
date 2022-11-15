@@ -9,11 +9,11 @@ pub use bevy_rapier3d::prelude::{
 
 mod interpolation;
 mod layer;
-mod time;
+mod tick;
 
 pub use interpolation::*;
 pub use layer::*;
-pub use time::*;
+pub use tick::*;
 
 pub struct PhysicsPlugin;
 
@@ -21,7 +21,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RapierConfiguration {
             timestep_mode: TimestepMode::Interpolated {
-                dt: SIMULATION_TICK_RATE,
+                dt: PHYSICS_TICK_RATE,
                 time_scale: 1.0,
                 substeps: 1,
             },
@@ -32,19 +32,19 @@ impl Plugin for PhysicsPlugin {
         .add_stage_before(
             CoreStage::PreUpdate,
             PhysicsStage::PreUpdate,
-            SystemStage::parallel().with_run_criteria(time_run_criteria),
+            SystemStage::parallel().with_run_criteria(tick_run_criteria),
         )
         .add_stage_before(
             CoreStage::Update,
             PhysicsStage::Update,
-            SystemStage::parallel().with_run_criteria(time_run_criteria),
+            SystemStage::parallel().with_run_criteria(tick_run_criteria),
         )
         .add_stage_after(
             PhysicsStages::Writeback,
             PhysicsStage::PostUpdate,
-            SystemStage::parallel().with_run_criteria(time_run_criteria),
+            SystemStage::parallel().with_run_criteria(tick_run_criteria),
         )
-        .add_plugin(TimePlugin)
+        .add_plugin(TickPlugin)
         .add_plugin(InterpolationPlugin);
     }
 }

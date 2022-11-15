@@ -161,7 +161,7 @@ fn movement(
         With<Player>,
     >,
     input: Res<InputMovement>,
-    tick: Res<SimulationTick>,
+    tick: Res<PhysicsTick>,
 ) {
     let (mut velocity, speed_scalar, acceleration_scalar, resistance_scalar) =
         player_q.single_mut();

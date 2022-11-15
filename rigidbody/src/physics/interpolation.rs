@@ -31,10 +31,7 @@ fn setup_interpolation(
     }
 }
 
-fn interpolate(
-    mut lerp_q: Query<(&mut Transform, &Interpolation, &Lerp)>,
-    tick: Res<SimulationTick>,
-) {
+fn interpolate(mut lerp_q: Query<(&mut Transform, &Interpolation, &Lerp)>, tick: Res<PhysicsTick>) {
     for (mut transform, simu, lerp) in lerp_q.iter_mut() {
         if simu.translate {
             transform.translation =

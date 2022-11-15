@@ -1,15 +1,19 @@
 use bevy::prelude::*;
 use bevy_extensions::RandomExt;
-use bevy_sequential_actions::*;
 
 mod move_action;
+mod wait_action;
 
 pub use move_action::*;
+pub use wait_action::*;
 
 pub struct ActionsPlugin;
 
 impl Plugin for ActionsPlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_plugin(WaitActionPlugin)
+            .add_plugin(MoveActionPlugin);
+    }
 }
 
 pub trait IntoValue<T = Self>
