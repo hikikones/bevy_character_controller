@@ -246,24 +246,31 @@ fn jump(
 }
 
 fn set_ground(
-    mut player_q: Query<(&mut GroundState, &Transform), With<Player>>,
+    mut player_q: Query<(Entity, &mut GroundState, &Transform), With<Player>>,
     platform_q: Query<&PlatformName>,
     physics: Res<PhysicsContext>,
 ) {
-    let (mut ground_state, transform) = player_q.single_mut();
+    let (player, mut ground_state, transform) = player_q.single_mut();
 
     let ray_hit = physics.cast_ray(
         transform.translation + Vec3::Y * 0.1,
         -Vec3::Y,
         0.2,
         true,
-        PhysicsLayer::PLATFORM.into(),
+        QueryFilter {
+            exclude_rigid_body: Some(player),
+            ..Default::default()
+        },
     );
 
-    let state = if let Some((platform_entity, _)) = ray_hit {
-        match platform_q.get(platform_entity).unwrap() {
-            PlatformName::Ground => GroundState::Normal,
-            PlatformName::Ice => GroundState::Slippery,
+    let state = if let Some((hit_entity, _)) = ray_hit {
+        if let Ok(platform) = platform_q.get(hit_entity) {
+            match platform {
+                PlatformName::Ground => GroundState::Normal,
+                PlatformName::Ice => GroundState::Slippery,
+            }
+        } else {
+            GroundState::Normal
         }
     } else {
         GroundState::None
