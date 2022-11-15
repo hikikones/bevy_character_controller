@@ -1,11 +1,15 @@
-use bevy::{prelude::*, window::PresentMode};
+use bevy::prelude::*;
 
+use bevy_actions::*;
 use bevy_bootstrap::*;
 use bevy_extensions::*;
+use bevy_physics::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(PhysicsPlugin)
+        .add_plugin(ActionsPlugin)
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
@@ -15,10 +19,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    // platform_q: Query<(Entity, &Platform)>,
-    mut commands: Commands,
-) {
+fn setup(mut commands: Commands) {
     commands.spawn_actor(ActorConfig::default());
 }
 

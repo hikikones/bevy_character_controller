@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use bevy_physics::*;
+
 use crate::assets::*;
 
 pub struct PlatformPlugin;
@@ -29,7 +31,12 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert(PlatformName::Ground);
+        .insert(PlatformName::Ground)
+        .insert_bundle((
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(0.0),
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
+        ));
 
     // Ice
     commands
@@ -43,7 +50,12 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert(PlatformName::Ice);
+        .insert(PlatformName::Ice)
+        .insert_bundle((
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(0.0),
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
+        ));
 
     // Ramp
     commands
@@ -57,5 +69,10 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             },
             ..Default::default()
         })
-        .insert(PlatformName::Ground);
+        .insert(PlatformName::Ground)
+        .insert_bundle((
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(0.0),
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
+        ));
 }

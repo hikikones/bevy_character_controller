@@ -286,6 +286,7 @@ name = "bevy_bootstrap"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_actions",
  "bevy_extensions",
  "bevy_physics",
 ]
@@ -2068,6 +2069,7 @@ dependencies = [
  "bevy_actions",
  "bevy_bootstrap",
  "bevy_extensions",
+ "bevy_physics",
 ]
 
 [[package]]

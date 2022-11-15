@@ -9,8 +9,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(PhysicsPlugin)
-        .add_plugin(BootstrapPlugin)
         .add_plugin(ActionsPlugin)
+        .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
@@ -81,62 +81,7 @@ struct PlayerBundle {
     ground_state: GroundState,
 }
 
-fn setup(
-    platform_q: Query<Entity, With<PlatformName>>,
-    block_q: Query<(Entity, &Transform), With<BlockName>>,
-    mut commands: Commands,
-) {
-    // Platforms
-    for platform in platform_q.iter() {
-        commands.entity(platform).insert_bundle((
-            Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
-            CollisionGroups::from(PhysicsLayer::PLATFORM),
-        ));
-    }
-
-    // Blocks
-    for (block, transform) in block_q.iter() {
-        let block_sim = commands
-            .spawn()
-            .insert_bundle(TransformBundle::from_transform(*transform))
-            .insert_bundle(ActionsBundle::default())
-            .insert_bundle((
-                Collider::cuboid(0.5, 0.5, 0.5),
-                Friction::coefficient(0.0),
-                CollisionGroups::from(PhysicsLayer::BLOCK),
-            ))
-            .id();
-
-        let start = transform.translation;
-        let end = start + transform.forward() * 11.0;
-
-        commands
-            .actions(block_sim)
-            .config(AddConfig {
-                repeat: Repeat::Forever,
-                ..Default::default()
-            })
-            .add(WaitAction::new(1.0))
-            .add(LerpAction::new(LerpConfig {
-                target: block_sim,
-                lerp_type: LerpType::Position(end),
-                duration: 2.0,
-            }))
-            .add(WaitAction::new(1.0))
-            .add(LerpAction::new(LerpConfig {
-                target: block_sim,
-                lerp_type: LerpType::Position(start),
-                duration: 2.0,
-            }));
-
-        commands.entity(block).insert(Interpolation {
-            target: block_sim,
-            translate: true,
-            rotate: false,
-        });
-    }
-
+fn setup(mut commands: Commands) {
     // Player
     let player = commands
         .spawn()

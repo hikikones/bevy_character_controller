@@ -7,3 +7,4 @@ edition.workspace = true
 bevy = { workspace = true }
 bevy_physics = { workspace = true }
 bevy_extensions = { workspace = true }
+bevy_actions = { workspace = true }

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use bevy_actions::*;
 use bevy_bootstrap::*;
 use bevy_extensions::*;
 use bevy_physics::*;
@@ -8,6 +9,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(PhysicsPlugin)
+        .add_plugin(ActionsPlugin)
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
@@ -19,25 +21,13 @@ fn main() {
         .run();
 }
 
-fn setup(platform_q: Query<(Entity, &PlatformName)>, mut commands: Commands) {
+fn setup(mut commands: Commands) {
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
     commands.entity(player).insert_bundle((
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
         KinematicCharacterController::default(),
     ));
-
-    // Platforms
-    for (entity, platform) in platform_q.iter() {
-        let friction = match platform {
-            PlatformName::Ground => 1.0,
-            PlatformName::Ice => 0.0,
-        };
-        commands.entity(entity).insert_bundle((
-            Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(friction),
-        ));
-    }
 }
 
 const MAX_SPEED: f32 = 10.0;
