@@ -20,14 +20,14 @@ fn main() {
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
-            SystemSet::new().with_system(rotation).with_system(jump), // .with_system(lerp),
+            SystemSet::new().with_system(rotation).with_system(jump),
         )
         .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
         .add_system_set_to_stage(
             PhysicsStage::PostUpdate,
             SystemSet::new()
                 .with_system(set_ground)
-                .with_system(on_ground_change.after(set_ground)), // .with_system(lerp_set),
+                .with_system(on_ground_change.after(set_ground)),
         )
         .run();
 }
@@ -88,16 +88,12 @@ struct PlayerBundle {
 }
 
 fn setup(
-    platform_q: Query<(Entity, &PlatformName)>,
-    block_q: Query<(Entity, &BlockName)>,
+    platform_q: Query<Entity, With<PlatformName>>,
+    block_q: Query<Entity, With<BlockName>>,
     mut commands: Commands,
 ) {
     // Platforms
-    for (entity, platform) in platform_q.iter() {
-        let friction = match platform {
-            PlatformName::Ground => 1.0,
-            PlatformName::Ice => 0.0,
-        };
+    for entity in platform_q.iter() {
         commands.entity(entity).insert_bundle((
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
@@ -106,12 +102,9 @@ fn setup(
     }
 
     // Blocks
-    for (entity, block) in block_q.iter() {
-        let collider = match block {
-            BlockName::Cube => Collider::cuboid(0.5, 0.5, 0.5),
-        };
+    for entity in block_q.iter() {
         commands.entity(entity).insert_bundle((
-            collider,
+            Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::BLOCK),
         ));
@@ -150,7 +143,6 @@ fn setup(
 
     // Actor
     let actor = commands.spawn_actor(ActorConfig::default());
-    // commands.entity(actor).insert(Lerp::default());
     commands.entity(actor).insert(Interpolation {
         target: player,
         translate: true,
@@ -182,13 +174,7 @@ fn movement(
     let direction = input.x0z();
     let current_velocity = velocity.linvel.x0z();
     let target_velocity = direction * BASE_SPEED * speed_scalar.0;
-    // let drag = current_velocity.normalize_or_zero() * resistance.0;
     let max_delta = BASE_ACCELERATION * acceleration_scalar.0 * tick.rate();
-
-    // let actual_velocity =
-    //     current_velocity.move_towards(target_velocity, max_delta) * (1.0 - resistance.0);
-    // let actual_velocity = current_velocity.move_towards(target_velocity, max_delta * resistance.0);
-    // velocity.linvel = actual_velocity.x_z(velocity.linvel.y);
 
     velocity.linvel = current_velocity
         .move_towards(target_velocity, max_delta)
@@ -264,21 +250,4 @@ fn on_ground_change(
         acceleration.0 = ground_state.acceleration_scalar();
         resistance.0 = ground_state.resistance_scalar();
     }
-}
-
-#[derive(Default, Component)]
-struct Lerp(Vec3, Vec3);
-
-fn lerp(mut actor_q: Query<(&mut Transform, &Lerp), With<Actor>>, tick: Res<SimulationTick>) {
-    let (mut transform, lerp) = actor_q.single_mut();
-    transform.translation = Vec3::lerp(lerp.0, lerp.1, tick.percent());
-}
-
-fn lerp_set(
-    mut actor_q: Query<&mut Lerp, (With<Actor>, Without<Player>)>,
-    player_q: Query<&Transform, With<Player>>,
-) {
-    let mut lerp = actor_q.single_mut();
-    lerp.0 = lerp.1;
-    lerp.1 = player_q.single().translation;
 }
