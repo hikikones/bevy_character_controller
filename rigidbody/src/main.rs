@@ -4,12 +4,10 @@ use bevy_extensions::*;
 use bootstrap::*;
 
 mod actions;
-mod layer;
-mod simulation;
+mod physics;
 
 use actions::*;
-use layer::PhysicsLayer;
-use simulation::*;
+use physics::*;
 
 fn main() {
     App::new()
@@ -18,18 +16,15 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(BootstrapPlugin)
-        .add_plugin(SimulationPlugin)
+        .add_plugin(PhysicsPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,
             SystemSet::new().with_system(rotation).with_system(jump), // .with_system(lerp),
         )
+        .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
         .add_system_set_to_stage(
-            SimulationStage::Update,
-            SystemSet::new().with_system(movement),
-        )
-        .add_system_set_to_stage(
-            SimulationStage::PostUpdate,
+            PhysicsStage::PostUpdate,
             SystemSet::new()
                 .with_system(set_ground)
                 .with_system(on_ground_change.after(set_ground)), // .with_system(lerp_set),

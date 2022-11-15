@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 
-use super::simulation::*;
+use super::*;
 
 bitflags! {
     pub struct PhysicsLayer: u32 {
