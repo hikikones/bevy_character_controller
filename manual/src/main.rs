@@ -26,7 +26,7 @@ fn setup(mut commands: Commands) {
 const MAX_SPEED: f32 = 10.0;
 const MAX_ACCELERATION: f32 = MAX_SPEED * 2.0;
 const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
-const JUMP_HEIGHT: f32 = 2.0;
+// const JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
     mut player_q: Query<&mut Transform, With<Actor>>,
@@ -38,7 +38,7 @@ fn movement(
     let input = input.x0z();
     let dt = time.delta_seconds();
     let target = input * MAX_SPEED;
-    let max_delta = MAX_ACCELERATION * dt;
+    // let max_delta = MAX_ACCELERATION * dt;
 
     transform.translation += target * dt;
 }

@@ -33,6 +33,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
         })
         .insert(PlatformName::Ground)
         .insert_bundle((
+            RigidBody::Fixed,
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
@@ -52,6 +53,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
         })
         .insert(PlatformName::Ice)
         .insert_bundle((
+            RigidBody::Fixed,
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
@@ -71,6 +73,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
         })
         .insert(PlatformName::Ground)
         .insert_bundle((
+            RigidBody::Fixed,
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),

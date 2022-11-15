@@ -33,6 +33,7 @@ fn spawn_blocks(mut commands: Commands, assets: Res<MyAssets>) {
         }))
         .insert_bundle(ActionsBundle::default())
         .insert_bundle((
+            RigidBody::KinematicPositionBased,
             Collider::cuboid(0.5, 0.5, 0.5),
             Friction::coefficient(0.0),
             CollisionGroups::from(PhysicsLayer::BLOCK),
