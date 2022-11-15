@@ -44,4 +44,18 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             ..Default::default()
         })
         .insert(PlatformName::Ice);
+
+    // Ramp
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: assets.mesh(MeshName::Cube),
+            material: assets.material(MaterialName::SeaGreen),
+            transform: Transform {
+                translation: -Vec3::X * 5.0,
+                rotation: Quat::from_rotation_z(-15.0_f32.to_radians()),
+                scale: Vec3::new(5.0, 1.0, 2.5),
+            },
+            ..Default::default()
+        })
+        .insert(PlatformName::Ground);
 }
