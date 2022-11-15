@@ -116,6 +116,9 @@ fn setup(
             ))
             .id();
 
+        let start = transform.translation;
+        let end = start + transform.forward() * 11.0;
+
         commands
             .actions(block_sim)
             .config(AddConfig {
@@ -125,13 +128,13 @@ fn setup(
             .add(WaitAction::new(1.0))
             .add(LerpAction::new(LerpConfig {
                 target: block_sim,
-                lerp_type: LerpType::Position(Vec3::new(5.5, 0.5, -2.5)),
+                lerp_type: LerpType::Position(end),
                 duration: 2.0,
             }))
             .add(WaitAction::new(1.0))
             .add(LerpAction::new(LerpConfig {
                 target: block_sim,
-                lerp_type: LerpType::Position(Vec3::new(-5.5, 0.5, -2.5)),
+                lerp_type: LerpType::Position(start),
                 duration: 2.0,
             }));
 
