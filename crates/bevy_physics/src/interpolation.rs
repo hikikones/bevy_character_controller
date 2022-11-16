@@ -13,7 +13,7 @@ impl Plugin for InterpolationPlugin {
 }
 
 #[derive(Component)]
-pub struct Interpolation {
+pub struct PhysicsInterpolation {
     pub target: Entity,
     pub translate: bool,
     pub rotate: bool,
@@ -23,7 +23,7 @@ pub struct Interpolation {
 struct Lerp(Transform, Transform);
 
 fn setup_interpolation(
-    simu_added_q: Query<(Entity, &Transform), Added<Interpolation>>,
+    simu_added_q: Query<(Entity, &Transform), Added<PhysicsInterpolation>>,
     mut commands: Commands,
 ) {
     for (entity, transform) in simu_added_q.iter() {
@@ -31,25 +31,28 @@ fn setup_interpolation(
     }
 }
 
-fn interpolate(mut lerp_q: Query<(&mut Transform, &Interpolation, &Lerp)>, tick: Res<PhysicsTick>) {
-    for (mut transform, simu, lerp) in lerp_q.iter_mut() {
-        if simu.translate {
+fn interpolate(
+    mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>,
+    tick: Res<PhysicsTick>,
+) {
+    for (mut transform, interpolate, lerp) in lerp_q.iter_mut() {
+        if interpolate.translate {
             transform.translation =
                 Vec3::lerp(lerp.0.translation, lerp.1.translation, tick.percent());
         }
 
-        if simu.rotate {
+        if interpolate.rotate {
             transform.rotation = Quat::slerp(lerp.0.rotation, lerp.1.rotation, tick.percent());
         }
     }
 }
 
 fn update_interpolation(
-    mut lerp_q: Query<(&mut Lerp, &Interpolation)>,
+    mut lerp_q: Query<(&mut Lerp, &PhysicsInterpolation)>,
     target_q: Query<&Transform>,
 ) {
-    for (mut lerp, simu) in lerp_q.iter_mut() {
+    for (mut lerp, interpolate) in lerp_q.iter_mut() {
         lerp.0 = lerp.1;
-        lerp.1 = *target_q.get(simu.target).unwrap();
+        lerp.1 = *target_q.get(interpolate.target).unwrap();
     }
 }

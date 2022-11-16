@@ -1,79 +1,147 @@
 use bevy::prelude::*;
 use bevy_actions::*;
-use bevy_extensions::FromLookExt;
 use bevy_physics::*;
 
 use crate::assets::*;
 
-pub struct BlockPlugin;
-
-impl Plugin for BlockPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system_to_stage(StartupStage::PreStartup, spawn_blocks);
-    }
-}
-
 #[derive(Component)]
-pub enum BlockName {
+pub enum Block {
+    Ground,
+    Ground2,
+    Ice,
+    Spinner,
     Cube,
 }
 
-fn spawn_blocks(mut commands: Commands, assets: Res<MyAssets>) {
-    // Cube
-    let start = Vec3::new(-5.5, 0.5, -2.5);
-    let end = Vec3::new(5.5, 0.5, -2.5);
-    let look = Quat::from_look(Vec3::X, Vec3::Y);
+pub trait SpawnBlockExt {
+    fn spawn_block(&mut self, assets: &MyAssets, block: Block, transform: Transform) -> &mut Self;
+}
 
-    let block_sim = commands
-        .spawn()
-        .insert_bundle(TransformBundle::from_transform(Transform {
-            translation: start,
-            rotation: look,
-            ..Default::default()
-        }))
-        .insert_bundle(ActionsBundle::default())
-        .insert_bundle((
-            RigidBody::KinematicPositionBased,
-            Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
-            CollisionGroups::from(PhysicsLayer::BLOCK),
-        ))
-        .id();
+impl SpawnBlockExt for Commands<'_, '_> {
+    fn spawn_block(&mut self, assets: &MyAssets, block: Block, transform: Transform) -> &mut Self {
+        match block {
+            Block::Ground => {
+                self.spawn_bundle(PbrBundle {
+                    mesh: assets.mesh(MeshName::Cube),
+                    material: assets.material(MaterialName::DarkGray),
+                    transform,
+                    ..Default::default()
+                })
+                .insert(Block::Ground)
+                .insert_bundle((
+                    RigidBody::Fixed,
+                    Collider::cuboid(0.5, 0.5, 0.5),
+                    Friction::coefficient(1.0),
+                    CollisionGroups::from(PhysicsLayer::PLATFORM),
+                ));
+            }
+            Block::Ground2 => {
+                self.spawn_bundle(PbrBundle {
+                    mesh: assets.mesh(MeshName::Cube),
+                    material: assets.material(MaterialName::SeaGreen),
+                    transform,
+                    ..Default::default()
+                })
+                .insert(Block::Ground)
+                .insert_bundle((
+                    RigidBody::Fixed,
+                    Collider::cuboid(0.5, 0.5, 0.5),
+                    Friction::coefficient(1.0),
+                    CollisionGroups::from(PhysicsLayer::PLATFORM),
+                ));
+            }
+            Block::Ice => {
+                self.spawn_bundle(PbrBundle {
+                    mesh: assets.mesh(MeshName::Cube),
+                    material: assets.material(MaterialName::Cyan),
+                    transform,
+                    ..Default::default()
+                })
+                .insert(Block::Ice)
+                .insert_bundle((
+                    RigidBody::Fixed,
+                    Collider::cuboid(0.5, 0.5, 0.5),
+                    Friction::coefficient(0.0),
+                    CollisionGroups::from(PhysicsLayer::PLATFORM),
+                ));
+            }
+            Block::Spinner => {
+                let spinner_sim = self
+                    .spawn_bundle(TransformBundle::from_transform(transform))
+                    .insert(Block::Spinner)
+                    .insert_bundle((
+                        RigidBody::KinematicVelocityBased,
+                        Collider::cuboid(0.5, 0.5, 0.5),
+                        Friction::coefficient(1.0),
+                        CollisionGroups::from(PhysicsLayer::PLATFORM),
+                        Velocity {
+                            linvel: Vec3::ZERO,
+                            angvel: Vec3::X * 1.0,
+                        },
+                    ))
+                    .id();
 
-    commands
-        .actions(block_sim)
-        .config(AddConfig {
-            repeat: Repeat::Forever,
-            ..Default::default()
-        })
-        .add(WaitAction::new(1.0))
-        .add(LerpAction::new(LerpConfig {
-            target: block_sim,
-            lerp_type: LerpType::Position(end),
-            duration: 2.0,
-        }))
-        .add(WaitAction::new(1.0))
-        .add(LerpAction::new(LerpConfig {
-            target: block_sim,
-            lerp_type: LerpType::Position(start),
-            duration: 2.0,
-        }));
+                self.spawn_bundle(PbrBundle {
+                    mesh: assets.mesh(MeshName::Cube),
+                    material: assets.material(MaterialName::MidnightBlue),
+                    transform,
+                    ..Default::default()
+                })
+                .insert(PhysicsInterpolation {
+                    target: spinner_sim,
+                    translate: false,
+                    rotate: true,
+                });
+            }
+            Block::Cube => {
+                let start = transform.translation;
+                let end = start + transform.forward() * 11.0;
+                let block_sim = self
+                    .spawn()
+                    .insert_bundle(TransformBundle::from_transform(transform))
+                    .insert_bundle(ActionsBundle::default())
+                    .insert(Block::Cube)
+                    .insert_bundle((
+                        RigidBody::KinematicPositionBased,
+                        Collider::cuboid(0.5, 0.5, 0.5),
+                        Friction::coefficient(0.0),
+                        CollisionGroups::from(PhysicsLayer::BLOCK),
+                    ))
+                    .id();
 
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: assets.mesh(MeshName::Cube),
-            material: assets.material(MaterialName::Red),
-            transform: Transform {
-                translation: start,
-                rotation: look,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(BlockName::Cube)
-        .insert(Interpolation {
-            target: block_sim,
-            translate: true,
-            rotate: false,
-        });
+                self.actions(block_sim)
+                    .config(AddConfig {
+                        repeat: Repeat::Forever,
+                        ..Default::default()
+                    })
+                    .add(WaitAction::new(1.0))
+                    .add(LerpAction::new(LerpConfig {
+                        target: block_sim,
+                        lerp_type: LerpType::Position(end),
+                        duration: 2.0,
+                    }))
+                    .add(WaitAction::new(1.0))
+                    .add(LerpAction::new(LerpConfig {
+                        target: block_sim,
+                        lerp_type: LerpType::Position(start),
+                        duration: 2.0,
+                    }));
+
+                self.spawn_bundle(PbrBundle {
+                    mesh: assets.mesh(MeshName::Cube),
+                    material: assets.material(MaterialName::Red),
+                    transform,
+                    ..Default::default()
+                })
+                .insert(Block::Cube)
+                .insert(PhysicsInterpolation {
+                    target: block_sim,
+                    translate: true,
+                    rotate: false,
+                });
+            }
+        }
+
+        self
+    }
 }
