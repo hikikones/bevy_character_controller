@@ -19,8 +19,16 @@ fn main() {
         .run();
 }
 
+#[derive(Component)]
+struct Player;
+
 fn setup(mut commands: Commands) {
-    commands.spawn_actor(ActorConfig::default());
+    // Player
+    let player = commands.spawn_actor(ActorConfig::default());
+    commands.entity(player).insert(Player);
+
+    // Camera follow
+    commands.camera_follow(player);
 }
 
 const MAX_SPEED: f32 = 10.0;
@@ -29,7 +37,7 @@ const ROTATION_SPEED: f32 = MAX_SPEED * 1.5;
 // const JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
-    mut player_q: Query<&mut Transform, With<Actor>>,
+    mut player_q: Query<&mut Transform, With<Player>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -44,7 +52,7 @@ fn movement(
 }
 
 fn rotation(
-    mut player_q: Query<&mut Transform, With<Actor>>,
+    mut player_q: Query<&mut Transform, With<Player>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {

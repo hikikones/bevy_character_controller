@@ -21,13 +21,20 @@ fn main() {
         .run();
 }
 
+#[derive(Component)]
+struct Player;
+
 fn setup(mut commands: Commands) {
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
     commands.entity(player).insert_bundle((
+        Player,
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
         KinematicCharacterController::default(),
     ));
+
+    // Camera follow
+    commands.camera_follow(player);
 }
 
 const MAX_SPEED: f32 = 10.0;
@@ -36,7 +43,7 @@ const MAX_SPEED: f32 = 10.0;
 // const JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
-    mut player_q: Query<&mut KinematicCharacterController, With<Actor>>,
+    mut player_q: Query<&mut KinematicCharacterController, With<Player>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -56,7 +63,7 @@ fn movement(
 }
 
 // fn rotation(
-//     mut player_q: Query<&mut Transform, With<Actor>>,
+//     mut player_q: Query<&mut Transform, With<Player>>,
 //     input: Res<InputMovement>,
 //     time: Res<Time>,
 // ) {
@@ -72,7 +79,7 @@ fn movement(
 //     );
 // }
 
-// fn jump(mut player_q: Query<&mut ExternalImpulse, With<Actor>>, input_action: Res<InputAction>) {
+// fn jump(mut player_q: Query<&mut ExternalImpulse, With<Player>>, input_action: Res<InputAction>) {
 //     if let InputAction::Jump = *input_action {
 //         let force = Vec3::Y * f32::sqrt(2.0 * 9.81 * JUMP_HEIGHT);
 //         player_q.single_mut().impulse = force;
