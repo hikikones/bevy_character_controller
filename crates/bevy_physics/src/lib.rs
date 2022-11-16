@@ -5,7 +5,7 @@ pub use bevy_rapier3d::prelude::{
     Ccd, CoefficientCombineRule, Collider, CollisionGroups, Damping, ExternalForce,
     ExternalImpulse, Friction, GravityScale, Group, InteractionGroups,
     KinematicCharacterController, LockedAxes, QueryFilter, RapierContext as PhysicsContext,
-    RigidBody, Sleeping, Velocity,
+    Restitution, RigidBody, Sleeping, Velocity,
 };
 
 mod interpolation;

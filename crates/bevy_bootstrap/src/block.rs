@@ -33,6 +33,7 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     Collider::cuboid(0.5, 0.5, 0.5),
                     Friction::coefficient(1.0),
                     CollisionGroups::from(PhysicsLayer::PLATFORM),
+                    Restitution::coefficient(0.0),
                 ));
             }
             Block::Ground2 => {
@@ -48,6 +49,7 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     Collider::cuboid(0.5, 0.5, 0.5),
                     Friction::coefficient(1.0),
                     CollisionGroups::from(PhysicsLayer::PLATFORM),
+                    Restitution::coefficient(0.0),
                 ));
             }
             Block::Ice => {
@@ -63,6 +65,7 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     Collider::cuboid(0.5, 0.5, 0.5),
                     Friction::coefficient(0.0),
                     CollisionGroups::from(PhysicsLayer::PLATFORM),
+                    Restitution::coefficient(0.0),
                 ));
             }
             Block::Spinner => {
@@ -74,6 +77,7 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         Collider::cuboid(0.5, 0.5, 0.5),
                         Friction::coefficient(1.0),
                         CollisionGroups::from(PhysicsLayer::PLATFORM),
+                        Restitution::coefficient(0.0),
                         Velocity {
                             linvel: Vec3::ZERO,
                             angvel: Vec3::X * 1.0,
@@ -106,6 +110,7 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         Collider::cuboid(0.5, 0.5, 0.5),
                         Friction::coefficient(0.0),
                         CollisionGroups::from(PhysicsLayer::BLOCK),
+                        Restitution::coefficient(0.0),
                     ))
                     .id();
 

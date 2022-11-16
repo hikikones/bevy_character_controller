@@ -84,7 +84,7 @@ fn setup(mut commands: Commands) {
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
             CollisionGroups::from(PhysicsLayer::PLAYER),
             Friction::coefficient(0.0),
-            // Restitution::default(),
+            Restitution::coefficient(0.0),
             // Damping::default(),
             // ColliderMassProperties::default(),
             Velocity::default(),
