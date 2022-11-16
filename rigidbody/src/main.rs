@@ -103,6 +103,9 @@ fn setup(mut commands: Commands) {
         translate: true,
         rotate: false,
     });
+
+    // Camera follow
+    commands.camera_follow(actor);
 }
 
 fn movement(
