@@ -53,24 +53,6 @@ enum GroundState {
     Slippery,
 }
 
-impl GroundState {
-    const fn acceleration_scalar(&self) -> f32 {
-        match self {
-            GroundState::None => 0.5,
-            GroundState::Normal => 1.0,
-            GroundState::Slippery => 0.2,
-        }
-    }
-
-    const fn resistance_scalar(&self) -> f32 {
-        match self {
-            GroundState::None => 0.0,
-            GroundState::Normal => 1.0,
-            GroundState::Slippery => 0.01,
-        }
-    }
-}
-
 #[derive(Bundle)]
 struct PlayerBundle {
     marker: Player,
@@ -103,7 +85,7 @@ fn setup(mut commands: Commands) {
             // Restitution::default(),
             // Damping::default(),
             // ColliderMassProperties::default(),
-            // GravityScale::default(),
+            GravityScale::default(),
             Velocity::default(),
             // ExternalForce::default(),
             ExternalImpulse::default(),
@@ -139,7 +121,9 @@ fn movement(
         player_q.single_mut();
 
     if input.is_zero() {
-        velocity.linvel *= 1.0 - (BASE_RESISTANCE * resistance_scalar.0);
+        let drag_scale = 1.0 - BASE_RESISTANCE * resistance_scalar.0;
+        let drag_velocity = velocity.linvel * drag_scale;
+        velocity.linvel = drag_velocity.x_z(velocity.linvel.y);
         return;
     }
 
@@ -173,12 +157,13 @@ fn rotation(
 }
 
 fn jump(
-    mut player_q: Query<(&mut ExternalImpulse, &JumpHeightScalar), With<Player>>,
+    mut player_q: Query<(&mut ExternalImpulse, &GravityScale, &JumpHeightScalar), With<Player>>,
     input_action: Res<InputAction>,
 ) {
     if let InputAction::Jump = *input_action {
-        let (mut impulse, jump_height_scalar) = player_q.single_mut();
-        impulse.impulse = Vec3::Y * f32::sqrt(2.0 * 9.81 * BASE_JUMP_HEIGHT * jump_height_scalar.0);
+        let (mut impulse, gravity_scale, jump_height_scalar) = player_q.single_mut();
+        impulse.impulse = Vec3::Y
+            * f32::sqrt(2.0 * 9.81 * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scalar.0);
     }
 }
 
@@ -220,13 +205,34 @@ fn set_ground(
 
 fn on_ground_change(
     mut player_q: Query<
-        (&GroundState, &mut AccelerationScalar, &mut ResistanceScalar),
+        (
+            &GroundState,
+            &mut AccelerationScalar,
+            &mut ResistanceScalar,
+            &mut GravityScale,
+        ),
         (Changed<GroundState>, With<Player>),
     >,
 ) {
-    if let Ok((ground_state, mut acceleration, mut resistance)) = player_q.get_single_mut() {
-        dbg!(ground_state);
-        acceleration.0 = ground_state.acceleration_scalar();
-        resistance.0 = ground_state.resistance_scalar();
+    if let Ok((ground_state, mut acceleration, mut resistance, mut gravity)) =
+        player_q.get_single_mut()
+    {
+        match ground_state {
+            GroundState::None => {
+                acceleration.0 = 0.5;
+                resistance.0 = 0.0;
+                gravity.0 = 2.0;
+            }
+            GroundState::Normal => {
+                acceleration.0 = 1.0;
+                resistance.0 = 1.0;
+                gravity.0 = 2.0;
+            }
+            GroundState::Slippery => {
+                acceleration.0 = 0.2;
+                resistance.0 = 0.01;
+                gravity.0 = 2.0;
+            }
+        }
     }
 }

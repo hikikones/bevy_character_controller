@@ -35,7 +35,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
         .insert_bundle((
             RigidBody::Fixed,
             Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
+            Friction::coefficient(1.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
         ));
 
@@ -65,7 +65,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
             mesh: assets.mesh(MeshName::Cube),
             material: assets.material(MaterialName::SeaGreen),
             transform: Transform {
-                translation: -Vec3::X * 5.0,
+                translation: Vec3::new(-5.0, 0.0, -0.5),
                 rotation: Quat::from_rotation_z(-15.0_f32.to_radians()),
                 scale: Vec3::new(5.0, 1.0, 2.5),
             },
@@ -75,7 +75,47 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
         .insert_bundle((
             RigidBody::Fixed,
             Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
+            Friction::coefficient(1.0),
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
+        ));
+
+    // Ramp
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: assets.mesh(MeshName::Cube),
+            material: assets.material(MaterialName::SeaGreen),
+            transform: Transform {
+                translation: Vec3::new(-5.0, 0.0, 2.0),
+                rotation: Quat::from_rotation_z(-35.0_f32.to_radians()),
+                scale: Vec3::new(7.0, 1.0, 2.5),
+            },
+            ..Default::default()
+        })
+        .insert(PlatformName::Ground)
+        .insert_bundle((
+            RigidBody::Fixed,
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(1.0),
+            CollisionGroups::from(PhysicsLayer::PLATFORM),
+        ));
+
+    // Wall
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: assets.mesh(MeshName::Cube),
+            material: assets.material(MaterialName::SeaGreen),
+            transform: Transform {
+                translation: Vec3::new(-6.0, 0.0, 4.0),
+                scale: Vec3::new(1.0, 8.0, 1.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(PlatformName::Ground)
+        .insert_bundle((
+            RigidBody::Fixed,
+            Collider::cuboid(0.5, 0.5, 0.5),
+            Friction::coefficient(1.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
         ));
 
@@ -95,7 +135,7 @@ fn spawn_platforms(mut commands: Commands, assets: Res<MyAssets>) {
         .insert_bundle((
             RigidBody::KinematicVelocityBased,
             Collider::cuboid(0.5, 0.5, 0.5),
-            Friction::coefficient(0.0),
+            Friction::coefficient(1.0),
             CollisionGroups::from(PhysicsLayer::PLATFORM),
             Velocity {
                 linvel: Vec3::ZERO,
