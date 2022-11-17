@@ -113,10 +113,10 @@ fn movement(
     input: Res<InputMovement>,
     tick: Res<PhysicsTick>,
 ) {
-    let (mut velocity, speed_scale, acceleration_scale, drage_scale) = player_q.single_mut();
+    let (mut velocity, speed_scale, acceleration_scale, drag_scale) = player_q.single_mut();
 
     if input.is_zero() {
-        let drag_scalar = 1.0 - BASE_RESISTANCE * drage_scale.0;
+        let drag_scalar = 1.0 - BASE_RESISTANCE * drag_scale.0;
         let drag_velocity = velocity.linvel * drag_scalar;
         velocity.linvel = drag_velocity.x_z(velocity.linvel.y);
         return;

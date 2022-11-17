@@ -3,7 +3,7 @@ use bevy_extensions::FromLookExt;
 
 use crate::{assets::*, Block, SpawnBlockExt};
 
-pub(super) struct LevelPlugin;
+pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {

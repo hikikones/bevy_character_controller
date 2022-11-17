@@ -1,6 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 
-pub(super) struct AssetsPlugin;
+pub struct AssetsPlugin;
 
 impl Plugin for AssetsPlugin {
     fn build(&self, app: &mut App) {
