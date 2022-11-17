@@ -5,10 +5,15 @@ use bevy_bootstrap::{
     SpawnActorExt,
 };
 use bevy_extensions::*;
+use bevy_grid::{CellDirectionIter, SquareCell};
 
 mod board;
 
 fn main() {
+    let a = CellDirectionIter::new(SquareCell::new(0, 0), 100);
+    for a in a {
+        dbg!(a);
+    }
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_bootstrap::AssetsPlugin)

@@ -1,10 +1,12 @@
-use std::hash::Hash;
-use std::ops::Add;
+use std::ops::{Add, Mul};
+use std::{hash::Hash, ops::Sub};
 
 use bevy::math::{IVec3, Quat, Vec3};
 
+mod iter;
 mod square_cell;
 
+pub use iter::*;
 pub use square_cell::*;
 
 pub(crate) type CellInt = i32;
@@ -23,10 +25,14 @@ where
         + Hash
         + From<CellPointInt>
         + Add<Self, Output = Self>
-        + Add<CellPointInt, Output = Self>,
+        + Add<CellPointInt, Output = Self>
+        + Sub<Self, Output = Self>
+        + Sub<CellPointInt, Output = Self>
+        + Mul<CellInt, Output = Self>,
 {
     type Neighbors: Iterator<Item = Self>;
     type Direction: CellDirection;
+    type Directions: Iterator<Item = Self::Direction>;
 
     fn column(&self) -> CellInt;
     fn row(&self) -> CellInt;
@@ -36,6 +42,7 @@ where
     fn as_point(&self, size: CellFloat) -> CellPointFloat;
 
     fn neighbors(&self) -> Self::Neighbors;
+    fn directions(&self) -> Self::Directions;
 
     // Default impls
     fn adjacent(&self, direction: Self::Direction) -> Self {

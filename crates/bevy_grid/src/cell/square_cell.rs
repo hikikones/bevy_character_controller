@@ -19,6 +19,7 @@ impl SquareCell {
 impl GridCell for SquareCell {
     type Neighbors = std::array::IntoIter<Self, 8>;
     type Direction = SquareDirection;
+    type Directions = std::array::IntoIter<Self::Direction, 8>;
 
     fn column(&self) -> CellInt {
         self.column
@@ -61,6 +62,20 @@ impl GridCell for SquareCell {
         ]
         .into_iter()
     }
+
+    fn directions(&self) -> Self::Directions {
+        [
+            SquareDirection::North,
+            SquareDirection::NorthEast,
+            SquareDirection::East,
+            SquareDirection::SouthEast,
+            SquareDirection::South,
+            SquareDirection::SouthWest,
+            SquareDirection::West,
+            SquareDirection::NorthWest,
+        ]
+        .into_iter()
+    }
 }
 
 impl From<CellPointInt> for SquareCell {
@@ -71,22 +86,36 @@ impl From<CellPointInt> for SquareCell {
 
 impl Add<Self> for SquareCell {
     type Output = Self;
-    fn add(self, cell: Self) -> Self::Output {
-        Self::new(self.column + cell.column, self.row + cell.row)
-    }
-}
-
-impl Add<IVec2> for SquareCell {
-    type Output = Self;
-    fn add(self, v: IVec2) -> Self::Output {
-        Self::new(self.column + v.x, self.row + v.y)
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::new(self.column + rhs.column, self.row + rhs.row)
     }
 }
 
 impl Add<IVec3> for SquareCell {
     type Output = Self;
-    fn add(self, v: IVec3) -> Self::Output {
-        Self::new(self.column + v.x, self.row + v.z)
+    fn add(self, rhs: IVec3) -> Self::Output {
+        Self::new(self.column + rhs.x, self.row + rhs.z)
+    }
+}
+
+impl Sub<Self> for SquareCell {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::new(self.column - rhs.column, self.row - rhs.row)
+    }
+}
+
+impl Sub<IVec3> for SquareCell {
+    type Output = Self;
+    fn sub(self, rhs: IVec3) -> Self::Output {
+        Self::new(self.column - rhs.x, self.row - rhs.z)
+    }
+}
+
+impl Mul<CellInt> for SquareCell {
+    type Output = Self;
+    fn mul(self, rhs: CellInt) -> Self::Output {
+        Self::new(self.column * rhs, self.row * rhs)
     }
 }
 

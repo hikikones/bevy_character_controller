@@ -1,28 +1,33 @@
 use bevy::prelude::*;
 
+use bevy_bootstrap::{MaterialName, MeshName, MyAssets};
 use bevy_grid::*;
 
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.insert_resource(Board::new());
+        app.insert_resource(Platforms::new());
     }
 }
 
 #[derive(Deref, DerefMut)]
-pub struct Board(GridInfinite<SquareCell, Tile>);
+pub struct Platforms(GridInfinite<SquareCell, Platform>);
 
-impl Board {
+impl Platforms {
     pub fn new() -> Self {
         Self(GridInfinite::new(1.0))
     }
 }
 
 #[derive(Default)]
-pub struct Tile {}
+pub enum Platform {
+    #[default]
+    Ground,
+    Ice,
+}
 
-impl<C> GridTile<C> for Tile
+impl<C> GridTile<C> for Platform
 where
     C: GridCell,
 {
@@ -35,4 +40,12 @@ where
     fn neighbors(&self, cell: C) -> Self::Neighbors {
         cell.neighbors()
     }
+}
+
+fn spawn_platforms(
+    mut platforms: ResMut<Platforms>,
+    mut commands: Commands,
+    assets: Res<MyAssets>,
+) {
+    //todo
 }
