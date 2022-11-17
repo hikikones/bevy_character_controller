@@ -6,12 +6,15 @@ use bevy_bootstrap::{
 };
 use bevy_extensions::*;
 
+mod board;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_bootstrap::AssetsPlugin)
         .add_plugin(bevy_bootstrap::CameraPlugin)
         .add_plugin(bevy_bootstrap::InputPlugin)
+        .add_plugin(board::BoardPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::Update,

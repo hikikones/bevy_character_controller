@@ -299,6 +299,7 @@ dependencies = [
  "bevy_actions",
  "bevy_bootstrap",
  "bevy_extensions",
+ "bevy_grid",
  "bevy_physics",
  "bitflags",
  "fastrand",
@@ -2076,6 +2077,7 @@ dependencies = [
  "bevy_actions",
  "bevy_bootstrap",
  "bevy_extensions",
+ "bevy_grid",
  "bevy_physics",
 ]
 

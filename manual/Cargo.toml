@@ -9,3 +9,4 @@ bevy_physics = { workspace = true }
 bevy_extensions = { workspace = true }
 bevy_bootstrap = { workspace = true }
 bevy_actions = { workspace = true }
+bevy_grid = { workspace = true }

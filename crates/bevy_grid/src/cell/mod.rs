@@ -7,11 +7,11 @@ mod square_cell;
 
 pub use square_cell::*;
 
-pub type CellInt = i32;
-pub type CellUint = u32;
-pub type CellFloat = f32;
-pub type CellPointFloat = Vec3;
-pub type CellPointInt = IVec3;
+pub(crate) type CellInt = i32;
+pub(crate) type CellUint = u32;
+pub(crate) type CellFloat = f32;
+pub(crate) type CellPointFloat = Vec3;
+pub(crate) type CellPointInt = IVec3;
 
 pub trait GridCell
 where

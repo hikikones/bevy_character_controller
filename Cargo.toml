@@ -16,6 +16,7 @@ bevy_physics = { path = "crates/bevy_physics" }
 bevy_extensions = { path = "crates/bevy_extensions" }
 bevy_bootstrap = { path = "crates/bevy_bootstrap" }
 bevy_actions = { path = "crates/bevy_actions" }
+bevy_grid = { path = "crates/bevy_grid" }
 bitflags = "1.3"
 fastrand = "1.8"
 
@@ -25,6 +26,7 @@ bevy_physics = { workspace = true }
 bevy_extensions = { workspace = true }
 bevy_bootstrap = { workspace = true }
 bevy_actions = { workspace = true }
+bevy_grid = { workspace = true }
 bitflags = { workspace = true }
 fastrand = { workspace = true }
 
