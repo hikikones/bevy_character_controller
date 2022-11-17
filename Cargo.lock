@@ -453,6 +453,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_grid"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_hierarchy"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
