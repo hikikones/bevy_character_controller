@@ -49,8 +49,13 @@ where
 
 fn set_platforms(mut platforms: ResMut<Platforms>) {
     platforms.set_tile(SquareCell::ZERO, Platform::Ground);
+
     for cell in CellDirectionIter::new(SquareCell::ZERO, 1) {
         platforms.set_tile(cell, Platform::Ground);
+    }
+
+    for cell in CellBoxIter::new(SquareCell::new(-6, -8), 12, 4) {
+        platforms.set_tile(cell, Platform::Ice);
     }
 }
 
