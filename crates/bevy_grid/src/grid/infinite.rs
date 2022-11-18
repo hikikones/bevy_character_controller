@@ -25,6 +25,10 @@ where
         }
     }
 
+    pub fn get_tile_from_point(&self, point: CellPointFloat) -> Option<&T> {
+        self.get_tile(self.get_cell(point))
+    }
+
     pub fn iter(&self) -> bevy::utils::hashbrown::hash_map::Iter<C, T> {
         self.tiles.iter()
     }

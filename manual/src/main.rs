@@ -5,7 +5,6 @@ use bevy_bootstrap::{
     SpawnActorExt,
 };
 use bevy_extensions::*;
-use bevy_grid::*;
 
 mod board;
 
@@ -48,7 +47,7 @@ const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
 const BASE_DRAG: f32 = 0.25;
 const BASE_JUMP_HEIGHT: f32 = 2.0;
 
-#[derive(Default, Component)]
+#[derive(Component, Default)]
 struct Player;
 
 #[derive(Component)]
@@ -226,11 +225,11 @@ fn set_ground_state(
     platforms: Res<Platforms>,
 ) {
     let (mut ground_state, transform) = player_q.single_mut();
+    let pos = transform.translation;
 
-    let cell = platforms.get_cell(transform.translation);
-    let state = if transform.translation.y > 0.0 {
+    let state = if pos.y > 0.0 {
         GroundState::None
-    } else if let Some(platform) = platforms.get_tile(cell) {
+    } else if let Some(platform) = platforms.get_tile_from_point(pos) {
         match platform {
             Platform::Ground => GroundState::Normal,
             Platform::Ice => GroundState::Slippery,
