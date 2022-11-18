@@ -5,7 +5,10 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system_to_stage(StartupStage::PreStartup, spawn_camera)
-            .add_system_to_stage(CoreStage::Last, camera_follow);
+            .add_system_to_stage(
+                CoreStage::Last,
+                camera_follow.after(bevy::transform::transform_propagate_system),
+            );
     }
 }
 

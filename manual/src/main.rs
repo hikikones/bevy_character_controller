@@ -5,8 +5,11 @@ use bevy_bootstrap::{
     SpawnActorExt,
 };
 use bevy_extensions::*;
+use bevy_grid::*;
 
 mod board;
+
+use board::*;
 
 fn main() {
     App::new()
@@ -17,6 +20,10 @@ fn main() {
         .add_plugin(board::BoardPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
+            CoreStage::PreUpdate,
+            SystemSet::new().with_system(bevy::window::close_on_esc),
+        )
+        .add_system_set_to_stage(
             CoreStage::Update,
             SystemSet::new()
                 .with_system(movement)
@@ -25,17 +32,34 @@ fn main() {
         )
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
-            SystemSet::new().with_system(apply_velocity),
+            SystemSet::new()
+                .before(bevy::transform::transform_propagate_system)
+                .with_system(apply_velocity)
+                .with_system(set_ground_state.before(apply_velocity))
+                .with_system(on_ground_change.after(set_ground_state)),
         )
-        .add_system_to_stage(CoreStage::PreUpdate, bevy::window::close_on_esc)
         .run();
 }
+
+const BASE_GRAVITY: f32 = 9.81;
+
+const BASE_SPEED: f32 = 8.0;
+const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
+const BASE_DRAG: f32 = 0.25;
+const BASE_JUMP_HEIGHT: f32 = 2.0;
 
 #[derive(Default, Component)]
 struct Player;
 
 #[derive(Component)]
 struct Velocity(Vec3);
+
+#[derive(Component, Debug, PartialEq, Eq)]
+enum GroundState {
+    None,
+    Normal,
+    Slippery,
+}
 
 #[derive(Component)]
 struct SpeedScale(f32);
@@ -56,6 +80,7 @@ struct GravityScale(f32);
 struct PlayerBundle {
     marker: Player,
     velocity: Velocity,
+    ground_state: GroundState,
     #[bundle]
     scales: ScaleBundle,
 }
@@ -65,6 +90,7 @@ impl Default for PlayerBundle {
         Self {
             marker: Player,
             velocity: Velocity(Vec3::ZERO),
+            ground_state: GroundState::Normal,
             scales: ScaleBundle::default(),
         }
     }
@@ -106,7 +132,7 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     // Floor
     commands.spawn_bundle(PbrBundle {
         mesh: assets.mesh(MeshName::Cube),
-        material: assets.material(MaterialName::Black),
+        material: assets.material(MaterialName::DarkGray),
         transform: Transform {
             translation: -Vec3::Y * 0.6,
             scale: Vec3::new(500.0, 1.0, 500.0),
@@ -124,11 +150,6 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     // Camera follow
     commands.camera_follow(player);
 }
-
-const BASE_SPEED: f32 = 10.0;
-const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
-const BASE_DRAG: f32 = 0.6;
-const BASE_JUMP_HEIGHT: f32 = 2.0;
 
 fn movement(
     mut player_q: Query<(&mut Velocity, &SpeedScale, &AccelerationScale), With<Player>>,
@@ -176,8 +197,9 @@ fn jump(
     if let InputAction::Jump = *input_action {
         let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
 
-        let y = f32::sqrt(2.0 * 9.81 * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0);
-        velocity.0.y += y;
+        velocity.0.y += f32::sqrt(
+            2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
+        );
     }
 }
 
@@ -196,5 +218,71 @@ fn apply_velocity(
     if transform.translation.y < 0.0 {
         transform.translation.y = 0.0;
         velocity.0.y = 0.0;
+    }
+}
+
+fn set_ground_state(
+    mut player_q: Query<(&mut GroundState, &Transform), With<Player>>,
+    platforms: Res<Platforms>,
+) {
+    let (mut ground_state, transform) = player_q.single_mut();
+
+    let cell = platforms.get_cell(transform.translation);
+    let state = if transform.translation.y > 0.0 {
+        GroundState::None
+    } else if let Some(platform) = platforms.get_tile(cell) {
+        match platform {
+            Platform::Ground => GroundState::Normal,
+            Platform::Ice => GroundState::Slippery,
+        }
+    } else {
+        GroundState::Normal
+    };
+
+    if *ground_state != state {
+        *ground_state = state;
+    }
+}
+
+fn on_ground_change(
+    mut player_q: Query<
+        (
+            &GroundState,
+            &mut SpeedScale,
+            &mut AccelerationScale,
+            &mut DragScale,
+            &mut GravityScale,
+        ),
+        (Changed<GroundState>, With<Player>),
+    >,
+) {
+    if let Ok((
+        ground_state,
+        mut speed_scale,
+        mut acceleration_scale,
+        mut drag_scale,
+        mut gravity_scale,
+    )) = player_q.get_single_mut()
+    {
+        match ground_state {
+            GroundState::None => {
+                speed_scale.0 = 1.0;
+                acceleration_scale.0 = 0.05;
+                drag_scale.0 = 0.05;
+                gravity_scale.0 = 1.0;
+            }
+            GroundState::Normal => {
+                speed_scale.0 = 1.0;
+                acceleration_scale.0 = 1.0;
+                drag_scale.0 = 1.0;
+                gravity_scale.0 = 1.0;
+            }
+            GroundState::Slippery => {
+                speed_scale.0 = 2.0;
+                acceleration_scale.0 = 0.01;
+                drag_scale.0 = 0.01;
+                gravity_scale.0 = 0.0;
+            }
+        }
     }
 }

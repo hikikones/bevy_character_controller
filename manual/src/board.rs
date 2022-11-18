@@ -54,7 +54,7 @@ fn set_platforms(mut platforms: ResMut<Platforms>) {
         platforms.set_tile(cell, Platform::Ground);
     }
 
-    for cell in CellBoxIter::new(SquareCell::new(-6, -8), 12, 4) {
+    for cell in CellBoxIter::new(SquareCell::new(-8, -8), 16, 4) {
         platforms.set_tile(cell, Platform::Ice);
     }
 }
@@ -62,7 +62,7 @@ fn set_platforms(mut platforms: ResMut<Platforms>) {
 fn spawn_platforms(platforms: Res<Platforms>, assets: Res<MyAssets>, mut commands: Commands) {
     for (cell, platform) in platforms.iter() {
         let material = match platform {
-            Platform::Ground => MaterialName::DarkGray,
+            Platform::Ground => MaterialName::Black,
             Platform::Ice => MaterialName::Cyan,
         };
 
