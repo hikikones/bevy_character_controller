@@ -1,4 +1,6 @@
-use crate::{CellFloat, CellInt, CellUint, GridCell};
+use bevy::prelude::IVec3;
+
+use crate::{CellInt, GridCell};
 
 pub struct CellDirectionIter<C>
 where
@@ -7,8 +9,7 @@ where
     start: C,
     loops: CellInt,
     round: CellInt,
-    index: usize,
-    dirs: Box<[C]>,
+    dirs: C::Directions,
 }
 
 impl<C> CellDirectionIter<C>
@@ -16,20 +17,11 @@ where
     C: GridCell,
 {
     pub fn new(start: C, loops: CellInt) -> Self {
-        let dirs = start
-            .directions()
-            .map(|dir| {
-                let neighbor = start.adjacent(dir);
-                neighbor - start
-            })
-            .collect();
-
         Self {
             start,
             loops,
             round: 1,
-            index: 0,
-            dirs,
+            dirs: start.directions(),
         }
     }
 }
@@ -41,19 +33,18 @@ where
     type Item = C;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if let Some(dir) = self.dirs.next() {
+            return Some(self.start + Into::<IVec3>::into(dir) * self.round);
+        }
+
+        self.round += 1;
+
         if self.round > self.loops {
             return None;
         }
 
-        let next = self.start + self.dirs[self.index] * self.round;
+        self.dirs = self.start.directions();
 
-        self.index += 1;
-
-        if self.index == self.dirs.len() {
-            self.round += 1;
-            self.index = 0;
-        }
-
-        Some(next)
+        self.next()
     }
 }

@@ -7,7 +7,12 @@ pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.insert_resource(Platforms::new());
+        app.insert_resource(Platforms::new())
+            .add_startup_system_set(
+                SystemSet::new()
+                    .with_system(set_platforms)
+                    .with_system(spawn_platforms.after(set_platforms)),
+            );
     }
 }
 
@@ -42,10 +47,28 @@ where
     }
 }
 
-fn spawn_platforms(
-    mut platforms: ResMut<Platforms>,
-    mut commands: Commands,
-    assets: Res<MyAssets>,
-) {
-    //todo
+fn set_platforms(mut platforms: ResMut<Platforms>) {
+    platforms.set_tile(SquareCell::ZERO, Platform::Ground);
+    for cell in CellDirectionIter::new(SquareCell::ZERO, 1) {
+        platforms.set_tile(cell, Platform::Ground);
+    }
+}
+
+fn spawn_platforms(platforms: Res<Platforms>, assets: Res<MyAssets>, mut commands: Commands) {
+    for (cell, platform) in platforms.iter() {
+        let material = match platform {
+            Platform::Ground => MaterialName::DarkGray,
+            Platform::Ice => MaterialName::Cyan,
+        };
+
+        commands.spawn_bundle(PbrBundle {
+            mesh: assets.mesh(MeshName::Cube),
+            material: assets.material(material),
+            transform: Transform {
+                translation: platforms.get_point(*cell) - Vec3::Y * 0.5,
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+    }
 }

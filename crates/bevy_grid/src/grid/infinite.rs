@@ -24,6 +24,10 @@ where
             cell_size,
         }
     }
+
+    pub fn iter(&self) -> bevy::utils::hashbrown::hash_map::Iter<C, T> {
+        self.tiles.iter()
+    }
 }
 
 impl<C, T> Grid<C, T> for GridInfinite<C, T>

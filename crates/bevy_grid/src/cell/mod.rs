@@ -30,6 +30,8 @@ where
         + Sub<CellPointInt, Output = Self>
         + Mul<CellInt, Output = Self>,
 {
+    const ZERO: Self;
+
     type Neighbors: Iterator<Item = Self>;
     type Direction: CellDirection;
     type Directions: Iterator<Item = Self::Direction>;

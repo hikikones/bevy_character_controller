@@ -5,15 +5,10 @@ use bevy_bootstrap::{
     SpawnActorExt,
 };
 use bevy_extensions::*;
-use bevy_grid::{CellDirectionIter, SquareCell};
 
 mod board;
 
 fn main() {
-    let a = CellDirectionIter::new(SquareCell::new(0, 0), 100);
-    for a in a {
-        dbg!(a);
-    }
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_bootstrap::AssetsPlugin)
@@ -108,24 +103,13 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
         ..Default::default()
     });
 
-    // Ground
+    // Floor
     commands.spawn_bundle(PbrBundle {
         mesh: assets.mesh(MeshName::Cube),
-        material: assets.material(MaterialName::DarkGray),
+        material: assets.material(MaterialName::Black),
         transform: Transform {
-            translation: -Vec3::Y * 0.5,
+            translation: -Vec3::Y * 0.6,
             scale: Vec3::new(500.0, 1.0, 500.0),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-
-    // Red cube
-    commands.spawn_bundle(PbrBundle {
-        mesh: assets.mesh(MeshName::Cube),
-        material: assets.material(MaterialName::Red),
-        transform: Transform {
-            translation: Vec3::new(-3.0, 0.0, 3.0),
             ..Default::default()
         },
         ..Default::default()

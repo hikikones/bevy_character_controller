@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use bevy::math::{IVec2, IVec3, Quat, Vec3};
+use bevy::math::{IVec3, Quat, Vec3};
 
 use crate::cell::*;
 
@@ -11,12 +11,14 @@ pub struct SquareCell {
 }
 
 impl SquareCell {
-    pub fn new(column: CellInt, row: CellInt) -> Self {
+    pub const fn new(column: CellInt, row: CellInt) -> Self {
         Self { column, row }
     }
 }
 
 impl GridCell for SquareCell {
+    const ZERO: Self = Self::new(0, 0);
+
     type Neighbors = std::array::IntoIter<Self, 8>;
     type Direction = SquareDirection;
     type Directions = std::array::IntoIter<Self::Direction, 8>;
@@ -137,38 +139,31 @@ impl Default for SquareDirection {
     }
 }
 
-impl Into<IVec2> for SquareDirection {
-    fn into(self) -> IVec2 {
-        match self {
-            SquareDirection::North => -IVec2::new(0, -1),
-            SquareDirection::NorthEast => IVec2::new(1, -1),
-            SquareDirection::East => IVec2::new(1, 0),
-            SquareDirection::SouthEast => IVec2::new(1, 1),
-            SquareDirection::South => IVec2::new(0, 1),
-            SquareDirection::SouthWest => IVec2::new(-1, 1),
-            SquareDirection::West => IVec2::new(-1, 0),
-            SquareDirection::NorthWest => IVec2::new(-1, -1),
+impl From<SquareDirection> for IVec3 {
+    fn from(dir: SquareDirection) -> Self {
+        match dir {
+            SquareDirection::North => Self::new(0, 0, -1),
+            SquareDirection::NorthEast => Self::new(1, 0, -1),
+            SquareDirection::East => Self::new(1, 0, 0),
+            SquareDirection::SouthEast => Self::new(1, 0, 1),
+            SquareDirection::South => Self::new(0, 0, 1),
+            SquareDirection::SouthWest => Self::new(-1, 0, 1),
+            SquareDirection::West => Self::new(-1, 0, 0),
+            SquareDirection::NorthWest => Self::new(-1, 0, -1),
         }
     }
 }
 
-impl Into<IVec3> for SquareDirection {
-    fn into(self) -> IVec3 {
-        let v: IVec2 = self.into();
-        IVec3::new(v.x, 0, v.y)
-    }
-}
-
-impl Into<Vec3> for SquareDirection {
-    fn into(self) -> Vec3 {
-        let v: IVec2 = self.into();
+impl From<SquareDirection> for Vec3 {
+    fn from(dir: SquareDirection) -> Self {
+        let v: IVec3 = dir.into();
         Vec3::new(v.x as f32, 0.0, v.y as f32)
     }
 }
 
-impl Into<Quat> for SquareDirection {
-    fn into(self) -> Quat {
-        let i = self as u8;
+impl From<SquareDirection> for Quat {
+    fn from(dir: SquareDirection) -> Self {
+        let i = dir as u8;
         let r = i as f32 * std::f32::consts::FRAC_PI_4;
         Quat::from_rotation_y(-r)
     }
