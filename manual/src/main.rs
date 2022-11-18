@@ -20,7 +20,10 @@ fn main() {
         .add_startup_system(setup)
         .add_system_set_to_stage(
             CoreStage::PreUpdate,
-            SystemSet::new().with_system(bevy::window::close_on_esc),
+            SystemSet::new()
+                .with_system(set_ground_state.before(apply_velocity))
+                .with_system(on_ground_change.after(set_ground_state))
+                .with_system(bevy::window::close_on_esc),
         )
         .add_system_set_to_stage(
             CoreStage::Update,
@@ -33,9 +36,7 @@ fn main() {
             CoreStage::PostUpdate,
             SystemSet::new()
                 .before(bevy::transform::transform_propagate_system)
-                .with_system(apply_velocity)
-                .with_system(set_ground_state.before(apply_velocity))
-                .with_system(on_ground_change.after(set_ground_state)),
+                .with_system(apply_velocity),
         )
         .run();
 }
@@ -203,21 +204,36 @@ fn jump(
 }
 
 fn apply_velocity(
-    mut player_q: Query<(&mut Transform, &mut Velocity, &DragScale), With<Player>>,
+    mut player_q: Query<
+        (
+            &mut Transform,
+            &mut Velocity,
+            &AccelerationScale,
+            &DragScale,
+        ),
+        With<Player>,
+    >,
     time: Res<Time>,
+    input: Res<InputMovement>,
+    mut v: Local<Vec3>,
 ) {
-    let (mut transform, mut velocity, drag_scale) = player_q.single_mut();
+    let (mut transform, mut velocity, acc, drag_scale) = player_q.single_mut();
 
-    transform.translation += velocity.0 * time.delta_seconds();
+    let dt = time.delta_seconds();
+    *v += input.x0z() * 3.0 * acc.0;
+    // *v *= f32::powf(0.05, dt);
+    *v *= 1.0 - (BASE_DRAG * drag_scale.0);
+    transform.translation += *v * dt;
+    // transform.translation += velocity.0 * time.delta_seconds();
 
-    let drag = velocity.0.x0z() * (1.0 - (BASE_DRAG * drag_scale.0));
-    let y = velocity.0.y - 9.81 * time.delta_seconds();
-    velocity.0 = drag.x_z(y);
+    // let drag = velocity.0.x0z() * (1.0 - (BASE_DRAG * drag_scale.0));
+    // let y = velocity.0.y - 9.81 * time.delta_seconds();
+    // velocity.0 = drag.x_z(y);
 
-    if transform.translation.y < 0.0 {
-        transform.translation.y = 0.0;
-        velocity.0.y = 0.0;
-    }
+    // if transform.translation.y < 0.0 {
+    //     transform.translation.y = 0.0;
+    //     velocity.0.y = 0.0;
+    // }
 }
 
 fn set_ground_state(
@@ -271,13 +287,13 @@ fn on_ground_change(
                 gravity_scale.0 = 1.0;
             }
             GroundState::Normal => {
-                speed_scale.0 = 1.0;
+                speed_scale.0 = 10.0;
                 acceleration_scale.0 = 1.0;
                 drag_scale.0 = 1.0;
                 gravity_scale.0 = 1.0;
             }
             GroundState::Slippery => {
-                speed_scale.0 = 2.0;
+                speed_scale.0 = 1.0;
                 acceleration_scale.0 = 0.01;
                 drag_scale.0 = 0.01;
                 gravity_scale.0 = 0.0;
