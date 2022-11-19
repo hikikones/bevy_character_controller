@@ -48,7 +48,7 @@ fn apply_velocity(
     )>,
     time: Res<Time>,
 ) {
-    if let Ok((mut transform, mut velocity, acceleration, frction, gravity)) =
+    if let Ok((mut transform, mut velocity, acceleration, friction, gravity)) =
         velocity_q.get_single_mut()
     {
         let dt = time.delta_seconds();
@@ -56,7 +56,7 @@ fn apply_velocity(
         // Horizontal
         let mut horizontal = velocity.current.x0z();
         horizontal += velocity.linear.x0z() * acceleration.0;
-        horizontal *= 1.0 - frction.0;
+        horizontal *= 1.0 - friction.0;
 
         // Vertical
         let mut y = velocity.current.y;
