@@ -116,8 +116,7 @@ fn movement(
     match ground_state {
         GroundState::Forward => {
             velocity.linear = if state.velocity_on_ground_change.x0z().length_squared() > 1.0 {
-                let v = transform.forward() * state.velocity_on_ground_change.x0z().length();
-                v.clamp_length_min(1.0)
+                transform.forward() * state.velocity_on_ground_change.x0z().length()
             } else {
                 transform.forward()
             };
@@ -207,7 +206,7 @@ fn on_ground_change(
         velocity,
     )) = player_q.get_single_mut()
     {
-        state.velocity_on_ground_change = velocity.current();
+        state.velocity_on_ground_change = velocity.linear;
 
         match ground_state {
             GroundState::None => {
@@ -230,7 +229,7 @@ fn on_ground_change(
             }
             GroundState::Forward => {
                 speed_scale.0 = 1.0;
-                acceleration_scale.0 = 0.5;
+                acceleration_scale.0 = 1.0;
                 friction_scale.0 = 1.0;
                 gravity_scale.0 = 1.0;
             }
