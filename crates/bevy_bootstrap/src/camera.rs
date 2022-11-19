@@ -57,11 +57,11 @@ struct Follow(Entity);
 
 fn camera_follow(
     mut follow_q: Query<(&mut Transform, &Follow)>,
-    transform_q: Query<&Transform, Without<Follow>>,
+    global_transform_q: Query<&GlobalTransform, Without<Follow>>,
 ) {
     if let Ok((mut transform, follow)) = follow_q.get_single_mut() {
-        if let Ok(target) = transform_q.get(follow.0) {
-            transform.translation = transform.translation.lerp(target.translation, 0.125);
+        if let Ok(target) = global_transform_q.get(follow.0) {
+            transform.translation = transform.translation.lerp(target.translation(), 0.125);
         }
     }
 }
