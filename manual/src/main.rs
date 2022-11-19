@@ -170,6 +170,7 @@ fn jump(
         velocity.linear.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
+        dbg!(velocity.linear);
     }
 }
 
