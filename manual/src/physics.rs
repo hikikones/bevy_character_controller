@@ -21,6 +21,12 @@ pub struct Velocity {
     current: Vec3,
 }
 
+impl Velocity {
+    pub fn current(&self) -> Vec3 {
+        self.current
+    }
+}
+
 #[derive(Component, Default)]
 pub struct Acceleration(pub f32);
 
