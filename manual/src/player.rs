@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_bootstrap::{InputAction, InputMovement};
-use bevy_extensions::FromLookExt;
+use bevy_extensions::{FromLookExt, Vec3SwizzlesExt};
 
 use crate::{board::*, physics::*};
 
@@ -36,6 +36,12 @@ const BASE_JUMP_HEIGHT: f32 = 2.0;
 struct Player;
 
 #[derive(Component)]
+struct PlayerState {
+    velocity_on_ground_change: Vec3,
+    // after_ground_change
+}
+
+#[derive(Component)]
 struct SpeedScale(f32);
 
 #[derive(Component)]
@@ -55,11 +61,14 @@ enum GroundState {
     None,
     Normal,
     Slippery,
+    Forward,
 }
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
     marker: Player,
+    state: PlayerState,
+    ground_state: GroundState,
 
     #[bundle]
     physics_bundle: PhysicsBundle,
@@ -69,30 +78,54 @@ pub struct PlayerBundle {
     friction_scale: FrictionScale,
     gravity_scale: GravityScale,
     jump_height_scale: JumpHeightScale,
-    ground_state: GroundState,
 }
 
 impl Default for PlayerBundle {
     fn default() -> Self {
         Self {
             marker: Player,
+            state: PlayerState {
+                velocity_on_ground_change: Vec3::ZERO,
+            },
+            ground_state: GroundState::Normal,
             physics_bundle: PhysicsBundle::default(),
             speed_scale: SpeedScale(1.0),
             acceleration_scale: AccelerationScale(1.0),
             friction_scale: FrictionScale(1.0),
             gravity_scale: GravityScale(1.0),
             jump_height_scale: JumpHeightScale(1.0),
-            ground_state: GroundState::Normal,
         }
     }
 }
 
 fn movement(
-    mut player_q: Query<(&mut Velocity, &SpeedScale), With<Player>>,
+    mut player_q: Query<
+        (
+            &mut Velocity,
+            &PlayerState,
+            &Transform,
+            &SpeedScale,
+            &GroundState,
+        ),
+        With<Player>,
+    >,
     input: Res<InputMovement>,
 ) {
-    let (mut velocity, speed_scale) = player_q.single_mut();
-    velocity.linear = input.x0z() * BASE_SPEED * speed_scale.0;
+    let (mut velocity, state, transform, speed_scale, ground_state) = player_q.single_mut();
+
+    match ground_state {
+        GroundState::Forward => {
+            velocity.linear = if state.velocity_on_ground_change.x0z().length_squared() > 1.0 {
+                let v = transform.forward() * state.velocity_on_ground_change.x0z().length();
+                v.clamp_length_min(1.0)
+            } else {
+                transform.forward()
+            };
+        }
+        _ => {
+            velocity.linear = input.x0z() * BASE_SPEED * speed_scale.0;
+        }
+    }
 }
 
 fn rotation(
@@ -139,6 +172,7 @@ fn set_ground_state(
         match platform {
             Platform::Ground => GroundState::Normal,
             Platform::Ice => GroundState::Slippery,
+            Platform::Skate => GroundState::Forward,
         }
     } else {
         GroundState::Normal
@@ -152,23 +186,29 @@ fn set_ground_state(
 fn on_ground_change(
     mut player_q: Query<
         (
-            &GroundState,
+            &mut PlayerState,
             &mut SpeedScale,
             &mut AccelerationScale,
             &mut FrictionScale,
             &mut GravityScale,
+            &GroundState,
+            &Velocity,
         ),
         (Changed<GroundState>, With<Player>),
     >,
 ) {
     if let Ok((
-        ground_state,
+        mut state,
         mut speed_scale,
         mut acceleration_scale,
         mut friction_scale,
         mut gravity_scale,
+        ground_state,
+        velocity,
     )) = player_q.get_single_mut()
     {
+        state.velocity_on_ground_change = velocity.current();
+
         match ground_state {
             GroundState::None => {
                 speed_scale.0 = 1.0;
@@ -187,6 +227,12 @@ fn on_ground_change(
                 acceleration_scale.0 = 0.02;
                 friction_scale.0 = 0.01;
                 gravity_scale.0 = 0.0;
+            }
+            GroundState::Forward => {
+                speed_scale.0 = 1.0;
+                acceleration_scale.0 = 0.5;
+                friction_scale.0 = 1.0;
+                gravity_scale.0 = 1.0;
             }
         }
     }

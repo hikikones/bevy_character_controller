@@ -30,6 +30,7 @@ pub enum Platform {
     #[default]
     Ground,
     Ice,
+    Skate,
 }
 
 impl<C> GridTile<C> for Platform
@@ -57,6 +58,10 @@ fn set_platforms(mut platforms: ResMut<Platforms>) {
     for cell in CellBoxIter::new(SquareCell::new(-8, -8), 16, 4) {
         platforms.set_tile(cell, Platform::Ice);
     }
+
+    for cell in CellBoxIter::new(SquareCell::new(-8, 8), 16, 4) {
+        platforms.set_tile(cell, Platform::Skate);
+    }
 }
 
 fn spawn_platforms(platforms: Res<Platforms>, assets: Res<MyAssets>, mut commands: Commands) {
@@ -64,6 +69,7 @@ fn spawn_platforms(platforms: Res<Platforms>, assets: Res<MyAssets>, mut command
         let material = match platform {
             Platform::Ground => MaterialName::Black,
             Platform::Ice => MaterialName::Cyan,
+            Platform::Skate => MaterialName::MidnightBlue,
         };
 
         commands.spawn_bundle(PbrBundle {
