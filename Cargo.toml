@@ -11,7 +11,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
-bevy = "0.8"
+bevy = "0.9"
 bevy_physics = { path = "crates/bevy_physics" }
 bevy_extensions = { path = "crates/bevy_extensions" }
 bevy_bootstrap = { path = "crates/bevy_bootstrap" }

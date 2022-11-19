@@ -13,7 +13,7 @@ impl Plugin for AssetsPlugin {
     }
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct MyAssets {
     meshes: HashMap<MeshName, Handle<Mesh>>,
     materials: HashMap<MaterialName, Handle<StandardMaterial>>,

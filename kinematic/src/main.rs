@@ -27,7 +27,7 @@ struct Player;
 fn setup(mut commands: Commands) {
     // Player
     let player = commands.spawn_actor(ActorConfig::default());
-    commands.entity(player).insert_bundle((
+    commands.entity(player).insert((
         Player,
         Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
         KinematicCharacterController::default(),

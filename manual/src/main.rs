@@ -24,7 +24,7 @@ fn main() {
 
 fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     // Light
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::WHITE,
             illuminance: 25000.0,
@@ -35,7 +35,7 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     });
 
     // Floor
-    commands.spawn_bundle(PbrBundle {
+    commands.spawn(PbrBundle {
         mesh: assets.mesh(MeshName::Cube),
         material: assets.material(MaterialName::DarkGray),
         transform: Transform {
@@ -50,7 +50,7 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     let player = commands.spawn_actor(ActorConfig::default());
     commands
         .entity(player)
-        .insert_bundle(player::PlayerBundle::default());
+        .insert(player::PlayerBundle::default());
 
     // Camera follow
     commands.camera_follow(player);

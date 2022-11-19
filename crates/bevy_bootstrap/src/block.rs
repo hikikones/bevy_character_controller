@@ -21,14 +21,14 @@ impl SpawnBlockExt for Commands<'_, '_> {
     fn spawn_block(&mut self, assets: &MyAssets, block: Block, transform: Transform) -> &mut Self {
         match block {
             Block::Ground => {
-                self.spawn_bundle(PbrBundle {
-                    mesh: assets.mesh(MeshName::Cube),
-                    material: assets.material(MaterialName::DarkGray),
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Block::Ground)
-                .insert_bundle((
+                self.spawn((
+                    PbrBundle {
+                        mesh: assets.mesh(MeshName::Cube),
+                        material: assets.material(MaterialName::DarkGray),
+                        transform,
+                        ..Default::default()
+                    },
+                    Block::Ground,
                     RigidBody::Fixed,
                     Collider::cuboid(0.5, 0.5, 0.5),
                     Friction::coefficient(1.0),
@@ -37,14 +37,14 @@ impl SpawnBlockExt for Commands<'_, '_> {
                 ));
             }
             Block::Ground2 => {
-                self.spawn_bundle(PbrBundle {
-                    mesh: assets.mesh(MeshName::Cube),
-                    material: assets.material(MaterialName::SeaGreen),
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Block::Ground)
-                .insert_bundle((
+                self.spawn((
+                    PbrBundle {
+                        mesh: assets.mesh(MeshName::Cube),
+                        material: assets.material(MaterialName::SeaGreen),
+                        transform,
+                        ..Default::default()
+                    },
+                    Block::Ground,
                     RigidBody::Fixed,
                     Collider::cuboid(0.5, 0.5, 0.5),
                     Friction::coefficient(1.0),
@@ -53,14 +53,14 @@ impl SpawnBlockExt for Commands<'_, '_> {
                 ));
             }
             Block::Ice => {
-                self.spawn_bundle(PbrBundle {
-                    mesh: assets.mesh(MeshName::Cube),
-                    material: assets.material(MaterialName::Cyan),
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Block::Ice)
-                .insert_bundle((
+                self.spawn((
+                    PbrBundle {
+                        mesh: assets.mesh(MeshName::Cube),
+                        material: assets.material(MaterialName::Cyan),
+                        transform,
+                        ..Default::default()
+                    },
+                    Block::Ice,
                     RigidBody::Fixed,
                     Collider::cuboid(0.5, 0.5, 0.5),
                     Friction::coefficient(0.0),
@@ -70,9 +70,9 @@ impl SpawnBlockExt for Commands<'_, '_> {
             }
             Block::Spinner => {
                 let spinner_sim = self
-                    .spawn_bundle(TransformBundle::from_transform(transform))
-                    .insert(Block::Spinner)
-                    .insert_bundle((
+                    .spawn((
+                        TransformBundle::from_transform(transform),
+                        Block::Spinner,
                         RigidBody::KinematicVelocityBased,
                         Collider::cuboid(0.5, 0.5, 0.5),
                         Friction::coefficient(1.0),
@@ -85,27 +85,29 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     ))
                     .id();
 
-                self.spawn_bundle(PbrBundle {
-                    mesh: assets.mesh(MeshName::Cube),
-                    material: assets.material(MaterialName::MidnightBlue),
-                    transform,
-                    ..Default::default()
-                })
-                .insert(PhysicsInterpolation {
-                    target: spinner_sim,
-                    translate: false,
-                    rotate: true,
-                });
+                self.spawn((
+                    PbrBundle {
+                        mesh: assets.mesh(MeshName::Cube),
+                        material: assets.material(MaterialName::MidnightBlue),
+                        transform,
+                        ..Default::default()
+                    },
+                    PhysicsInterpolation {
+                        target: spinner_sim,
+                        translate: false,
+                        rotate: true,
+                    },
+                ));
             }
             Block::Cube => {
                 let start = transform.translation;
                 let end = start + transform.forward() * 11.0;
+
                 let block_sim = self
-                    .spawn()
-                    .insert_bundle(TransformBundle::from_transform(transform))
-                    .insert_bundle(ActionsBundle::default())
-                    .insert(Block::Cube)
-                    .insert_bundle((
+                    .spawn((
+                        TransformBundle::from_transform(transform),
+                        ActionsBundle::new(),
+                        Block::Cube,
                         RigidBody::KinematicPositionBased,
                         Collider::cuboid(0.5, 0.5, 0.5),
                         Friction::coefficient(0.0),
@@ -113,6 +115,20 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         Restitution::coefficient(0.0),
                     ))
                     .id();
+
+                self.spawn((
+                    PbrBundle {
+                        mesh: assets.mesh(MeshName::Cube),
+                        material: assets.material(MaterialName::Red),
+                        transform,
+                        ..Default::default()
+                    },
+                    PhysicsInterpolation {
+                        target: block_sim,
+                        translate: true,
+                        rotate: false,
+                    },
+                ));
 
                 self.actions(block_sim)
                     .config(AddConfig {
@@ -131,19 +147,6 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         lerp_type: LerpType::Position(start),
                         duration: 2.0,
                     }));
-
-                self.spawn_bundle(PbrBundle {
-                    mesh: assets.mesh(MeshName::Cube),
-                    material: assets.material(MaterialName::Red),
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Block::Cube)
-                .insert(PhysicsInterpolation {
-                    target: block_sim,
-                    translate: true,
-                    rotate: false,
-                });
             }
         }
 

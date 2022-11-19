@@ -7,4 +7,4 @@ edition.workspace = true
 bevy = { workspace = true }
 bevy_physics = { workspace = true }
 bevy_extensions = { workspace = true }
-bevy-sequential-actions = "0.5"
+bevy-sequential-actions = "0.6"

@@ -17,20 +17,22 @@ pub trait SpawnActorExt {
 
 impl SpawnActorExt for Commands<'_, '_> {
     fn spawn_actor(&mut self, config: ActorConfig) -> Entity {
-        let entity = self.spawn().id();
+        let entity = self.spawn_empty().id();
 
         self.add(move |w: &mut World| {
             w.resource_scope(|w: &mut World, assets: Mut<MyAssets>| {
                 w.entity_mut(entity)
-                    .insert(Actor)
-                    .insert_bundle(SpatialBundle::from_transform(Transform {
-                        translation: config.position,
-                        rotation: config.rotation,
-                        ..Default::default()
-                    }))
+                    .insert((
+                        Actor,
+                        SpatialBundle::from_transform(Transform {
+                            translation: config.position,
+                            rotation: config.rotation,
+                            ..Default::default()
+                        }),
+                    ))
                     .with_children(|child| {
                         // Capsule
-                        child.spawn_bundle(PbrBundle {
+                        child.spawn(PbrBundle {
                             mesh: assets.mesh(MeshName::Capsule),
                             material: assets.material(MaterialName::White),
                             transform: Transform {
@@ -45,7 +47,7 @@ impl SpawnActorExt for Commands<'_, '_> {
                         let eye_right = Vec3::new(-eye_left.x, eye_left.y, eye_left.z);
                         let eye_scale = Vec3::splat(0.15);
 
-                        child.spawn_bundle(PbrBundle {
+                        child.spawn(PbrBundle {
                             mesh: assets.mesh(MeshName::Icosphere),
                             material: assets.material(MaterialName::Black),
                             transform: Transform {
@@ -55,7 +57,7 @@ impl SpawnActorExt for Commands<'_, '_> {
                             },
                             ..Default::default()
                         });
-                        child.spawn_bundle(PbrBundle {
+                        child.spawn(PbrBundle {
                             mesh: assets.mesh(MeshName::Icosphere),
                             material: assets.material(MaterialName::Black),
                             transform: Transform {

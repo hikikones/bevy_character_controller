@@ -17,7 +17,7 @@ impl Plugin for LevelPlugin {
 }
 
 fn spawn_light(mut commands: Commands) {
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::WHITE,
             illuminance: 25000.0,

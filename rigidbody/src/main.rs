@@ -67,19 +67,17 @@ struct PlayerBundle {
 fn setup(mut commands: Commands) {
     // Player
     let player = commands
-        .spawn()
-        .insert_bundle(TransformBundle::default())
-        .insert_bundle(PlayerBundle {
-            marker: Player,
-            speed_scale: SpeedScale(1.0),
-            acceleration_scale: AccelerationScale(1.0),
-            resistance_scale: DragScale(1.0),
-            jump_height_scale: JumpHeightScale(1.0),
-            gravity_scale: GravityScale(1.0),
-            ground_state: GroundState::Normal,
-        })
-        .insert_bundle((
-            GroundState::Normal,
+        .spawn((
+            TransformBundle::default(),
+            PlayerBundle {
+                marker: Player,
+                speed_scale: SpeedScale(1.0),
+                acceleration_scale: AccelerationScale(1.0),
+                resistance_scale: DragScale(1.0),
+                jump_height_scale: JumpHeightScale(1.0),
+                gravity_scale: GravityScale(1.0),
+                ground_state: GroundState::Normal,
+            },
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
             CollisionGroups::from(PhysicsLayer::PLAYER),

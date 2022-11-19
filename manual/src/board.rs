@@ -16,7 +16,7 @@ impl Plugin for BoardPlugin {
     }
 }
 
-#[derive(Deref, DerefMut)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct Platforms(GridInfinite<SquareCell, Platform>);
 
 impl Platforms {
@@ -72,7 +72,7 @@ fn spawn_platforms(platforms: Res<Platforms>, assets: Res<MyAssets>, mut command
             Platform::Skate => MaterialName::MidnightBlue,
         };
 
-        commands.spawn_bundle(PbrBundle {
+        commands.spawn(PbrBundle {
             mesh: assets.mesh(MeshName::Cube),
             material: assets.material(material),
             transform: Transform {

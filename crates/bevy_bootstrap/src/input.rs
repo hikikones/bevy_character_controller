@@ -13,7 +13,7 @@ impl Plugin for InputPlugin {
     }
 }
 
-#[derive(Default, PartialEq, Eq)]
+#[derive(Resource, Default, PartialEq, Eq)]
 pub enum InputAction {
     #[default]
     None,
@@ -32,7 +32,7 @@ fn action(keyboard: Res<Input<KeyCode>>, mut input_action: ResMut<InputAction>) 
     }
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct InputMovement(Vec2);
 
 impl InputMovement {
