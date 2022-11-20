@@ -21,9 +21,9 @@ pub struct PhysicsPlugin;
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RapierConfiguration {
-            timestep_mode: TimestepMode::Fixed {
+            timestep_mode: TimestepMode::Interpolated {
                 dt: PHYSICS_TICK_RATE,
-                // time_scale: 1.0,
+                time_scale: 1.0,
                 substeps: 1,
             },
             ..Default::default()
@@ -32,7 +32,7 @@ impl Plugin for PhysicsPlugin {
             CoreStage::Update,
             "physics",
             Schedule::default()
-                .with_run_criteria(tick_run_criteria)
+                // .with_run_criteria(tick_run_criteria)
                 .with_stage(
                     PhysicsStages::SyncBackend,
                     SystemStage::parallel().with_system_set(
@@ -63,8 +63,16 @@ impl Plugin for PhysicsPlugin {
                 RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::DetectDespawn),
             ),
         )
-        .add_stage_before("physics", PhysicsStage::Update, SystemStage::parallel())
-        .add_stage_after("physics", PhysicsStage::PostUpdate, SystemStage::parallel())
+        .add_stage_before(
+            "physics",
+            PhysicsStage::Update,
+            SystemStage::parallel().with_run_criteria(tick_run_criteria),
+        )
+        .add_stage_after(
+            "physics",
+            PhysicsStage::PostUpdate,
+            SystemStage::parallel().with_run_criteria(tick_run_criteria),
+        )
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(TickPlugin)
