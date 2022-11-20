@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_bootstrap::{InputAction, InputMovement};
+use bevy_bootstrap::{Actor, InputAction, InputMovement};
 use bevy_extensions::{FromLookExt, Vec3SwizzlesExt};
 
 use crate::{board::*, physics::*};
@@ -10,58 +10,23 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
+            CoreStage::Update,
+            SystemSet::new().with_system(rotation).with_system(jump),
+        )
+        .add_system_set_to_stage(
+            PhysicsStage::PreUpdate,
             SystemSet::new()
                 .with_system(set_ground_state)
                 .with_system(on_ground_change.after(set_ground_state)),
         )
+        .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
         .add_system_set_to_stage(
-            CoreStage::Update,
+            PhysicsStage::PostUpdate,
             SystemSet::new()
-                .with_system(movement)
-                .with_system(rotation)
-                .with_system(jump.after(movement))
-                .with_system(apply_physics_scalars.after(jump)),
+                .before(crate::physics::systems::apply_velocity)
+                .with_system(apply_physics_scalars),
         );
     }
-}
-
-const BASE_SPEED: f32 = 2.5;
-const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
-const BASE_FRICTION: f32 = 0.25;
-const BASE_GRAVITY: f32 = 9.81;
-const BASE_JUMP_HEIGHT: f32 = 2.0;
-
-#[derive(Component)]
-struct Player;
-
-#[derive(Component)]
-struct PlayerState {
-    velocity_on_ground_change: Vec3,
-    // after_ground_change
-}
-
-#[derive(Component)]
-struct SpeedScale(f32);
-
-#[derive(Component)]
-struct AccelerationScale(f32);
-
-#[derive(Component)]
-struct FrictionScale(f32);
-
-#[derive(Component)]
-struct GravityScale(f32);
-
-#[derive(Component)]
-struct JumpHeightScale(f32);
-
-#[derive(Component, Debug, PartialEq, Eq)]
-enum GroundState {
-    None,
-    Normal,
-    Slippery,
-    Forward,
 }
 
 #[derive(Bundle)]
@@ -85,9 +50,11 @@ impl Default for PlayerBundle {
         Self {
             marker: Player,
             state: PlayerState {
+                input_on_ground_change: Vec3::ZERO,
                 velocity_on_ground_change: Vec3::ZERO,
+                previous_ground_state: GroundState::default(),
             },
-            ground_state: GroundState::Normal,
+            ground_state: GroundState::default(),
             physics_bundle: PhysicsBundle::default(),
             speed_scale: SpeedScale(1.0),
             acceleration_scale: AccelerationScale(1.0),
@@ -98,37 +65,196 @@ impl Default for PlayerBundle {
     }
 }
 
+#[derive(Component)]
+struct Player;
+
+#[derive(Component)]
+struct PlayerState {
+    input_on_ground_change: Vec3,
+    velocity_on_ground_change: Vec3,
+    previous_ground_state: GroundState,
+}
+
+#[derive(Component)]
+struct SpeedScale(f32);
+
+#[derive(Component)]
+struct AccelerationScale(f32);
+
+#[derive(Component)]
+struct FrictionScale(f32);
+
+#[derive(Component)]
+struct GravityScale(f32);
+
+#[derive(Component)]
+struct JumpHeightScale(f32);
+
+#[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum GroundState {
+    None,
+    #[default]
+    Normal,
+    Slippery,
+    Forward,
+}
+
+struct Scalars {
+    speed: f32,
+    acceleration: f32,
+    friction: f32,
+    gravity: f32,
+    jump_height: f32,
+}
+
+const BASE_SPEED: f32 = 20.0;
+const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
+const BASE_FRICTION: f32 = 0.5;
+const BASE_GRAVITY: f32 = 9.81;
+const BASE_JUMP_HEIGHT: f32 = 2.0;
+
+impl GroundState {
+    fn scalars(&self) -> Scalars {
+        match self {
+            GroundState::None => Scalars {
+                speed: 1.0,
+                acceleration: 0.1,
+                friction: 0.1,
+                gravity: 1.0,
+                jump_height: 0.0,
+            },
+            GroundState::Normal => Scalars {
+                speed: 1.0,
+                acceleration: 1.0,
+                friction: 1.0,
+                gravity: 1.0,
+                jump_height: 1.0,
+            },
+            GroundState::Slippery => Scalars {
+                speed: 2.0,
+                acceleration: 0.05,
+                friction: 0.01,
+                gravity: 1.0,
+                jump_height: 0.0,
+            },
+            GroundState::Forward => Scalars {
+                speed: 1.0,
+                acceleration: 1.0,
+                friction: 1.0,
+                gravity: 1.0,
+                jump_height: 0.0,
+            },
+        }
+    }
+}
+
+fn set_ground_state(
+    mut player_q: Query<(&mut GroundState, &mut PlayerState, &Transform), With<Player>>,
+    platforms: Res<Platforms>,
+) {
+    let (mut ground_state, mut player_state, transform) = player_q.single_mut();
+    let pos = transform.translation;
+
+    let new_ground_state = if pos.y > 0.0 {
+        GroundState::None
+    } else if let Some(platform) = platforms.get_tile_from_point(pos) {
+        match platform {
+            Platform::Ground => GroundState::Normal,
+            Platform::Ice => GroundState::Slippery,
+            Platform::Skate => GroundState::Forward,
+        }
+    } else {
+        GroundState::Normal
+    };
+
+    if *ground_state != new_ground_state {
+        player_state.previous_ground_state = *ground_state;
+        *ground_state = new_ground_state;
+    }
+}
+
+fn on_ground_change(
+    mut player_q: Query<
+        (
+            &GroundState,
+            &Velocity,
+            &mut PlayerState,
+            &mut SpeedScale,
+            &mut AccelerationScale,
+            &mut FrictionScale,
+            &mut GravityScale,
+            &mut JumpHeightScale,
+        ),
+        (Changed<GroundState>, With<Player>),
+    >,
+    input: Res<InputMovement>,
+) {
+    if let Ok((
+        ground_state,
+        velocity,
+        mut player_state,
+        mut speed_scale,
+        mut acceleration_scale,
+        mut friction_scale,
+        mut gravity_scale,
+        mut jump_height_scale,
+    )) = player_q.get_single_mut()
+    {
+        player_state.velocity_on_ground_change = velocity.0;
+        player_state.input_on_ground_change = input.x0z();
+
+        let scalars = ground_state.scalars();
+        speed_scale.0 = scalars.speed;
+        acceleration_scale.0 = scalars.acceleration;
+        friction_scale.0 = scalars.friction;
+        gravity_scale.0 = scalars.gravity;
+        jump_height_scale.0 = scalars.jump_height;
+    }
+}
+
 fn movement(
     mut player_q: Query<
         (
             &mut Velocity,
+            &GroundState,
             &PlayerState,
             &Transform,
             &SpeedScale,
-            &GroundState,
+            &AccelerationScale,
         ),
         With<Player>,
     >,
     input: Res<InputMovement>,
 ) {
-    let (mut velocity, state, transform, speed_scale, ground_state) = player_q.single_mut();
+    if input.is_zero() {
+        return;
+    }
+
+    let (mut velocity, ground_state, state, transform, speed_scale, acceleration_scale) =
+        player_q.single_mut();
 
     match ground_state {
         GroundState::Forward => {
-            velocity.linear = if state.velocity_on_ground_change.x0z().length_squared() > 1.0 {
-                transform.forward() * state.velocity_on_ground_change.x0z().length()
+            if state.velocity_on_ground_change.x0z().length_squared() > 1.0 {
+                velocity.move_towards(
+                    transform.forward(),
+                    state.velocity_on_ground_change.x0z().length(),
+                );
             } else {
-                transform.forward()
+                velocity.move_towards(transform.forward(), 1.0);
             };
         }
         _ => {
-            velocity.linear = input.x0z() * BASE_SPEED * speed_scale.0;
+            velocity.move_towards(
+                input.x0z() * BASE_SPEED * speed_scale.0,
+                BASE_ACCELERATION * acceleration_scale.0,
+            );
         }
     }
 }
 
 fn rotation(
-    mut player_q: Query<&mut Transform, With<Player>>,
+    mut actor_q: Query<&mut Transform, With<Actor>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -138,7 +264,7 @@ fn rotation(
 
     const ROTATION_SPEED: f32 = 15.0;
 
-    let mut transform = player_q.single_mut();
+    let mut transform = actor_q.single_mut();
     transform.rotation = Quat::slerp(
         transform.rotation,
         Quat::from_look(input.x0z(), Vec3::Y),
@@ -152,114 +278,17 @@ fn jump(
 ) {
     if let InputAction::Jump = *input_action {
         let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
-        velocity.linear.y += f32::sqrt(
+        velocity.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
     }
 }
 
-fn set_ground_state(
-    mut player_q: Query<(&mut GroundState, &Transform), With<Player>>,
-    platforms: Res<Platforms>,
-) {
-    let (mut ground_state, transform) = player_q.single_mut();
-    let pos = transform.translation;
-
-    let state = if pos.y > 0.0 {
-        GroundState::None
-    } else if let Some(platform) = platforms.get_tile_from_point(pos) {
-        match platform {
-            Platform::Ground => GroundState::Normal,
-            Platform::Ice => GroundState::Slippery,
-            Platform::Skate => GroundState::Forward,
-        }
-    } else {
-        GroundState::Normal
-    };
-
-    if *ground_state != state {
-        *ground_state = state;
-    }
-}
-
-fn on_ground_change(
-    mut player_q: Query<
-        (
-            &mut PlayerState,
-            &mut SpeedScale,
-            &mut AccelerationScale,
-            &mut FrictionScale,
-            &mut GravityScale,
-            &GroundState,
-            &Velocity,
-        ),
-        (Changed<GroundState>, With<Player>),
-    >,
-) {
-    if let Ok((
-        mut state,
-        mut speed_scale,
-        mut acceleration_scale,
-        mut friction_scale,
-        mut gravity_scale,
-        ground_state,
-        velocity,
-    )) = player_q.get_single_mut()
-    {
-        state.velocity_on_ground_change = velocity.linear;
-
-        match ground_state {
-            GroundState::None => {
-                speed_scale.0 = 1.0;
-                acceleration_scale.0 = 0.05;
-                friction_scale.0 = 0.05;
-                gravity_scale.0 = 1.0;
-            }
-            GroundState::Normal => {
-                speed_scale.0 = 1.0;
-                acceleration_scale.0 = 1.0;
-                friction_scale.0 = 1.0;
-                gravity_scale.0 = 1.0;
-            }
-            GroundState::Slippery => {
-                speed_scale.0 = 1.0;
-                acceleration_scale.0 = 0.02;
-                friction_scale.0 = 0.01;
-                gravity_scale.0 = 0.0;
-            }
-            GroundState::Forward => {
-                speed_scale.0 = 1.0;
-                acceleration_scale.0 = 1.0;
-                friction_scale.0 = 1.0;
-                gravity_scale.0 = 1.0;
-            }
-        }
-    }
-}
-
 fn apply_physics_scalars(
-    mut player_q: Query<
-        (
-            &mut Acceleration,
-            &mut Friction,
-            &mut Gravity,
-            &AccelerationScale,
-            &FrictionScale,
-            &GravityScale,
-        ),
-        With<Player>,
-    >,
+    mut player_q: Query<(&mut Friction, &mut Gravity, &FrictionScale, &GravityScale), With<Player>>,
 ) {
-    let (
-        mut acceleration,
-        mut friction,
-        mut gravity,
-        acceleration_scale,
-        friction_scale,
-        gravity_scale,
-    ) = player_q.single_mut();
+    let (mut friction, mut gravity, friction_scale, gravity_scale) = player_q.single_mut();
 
-    acceleration.0 = BASE_ACCELERATION * acceleration_scale.0;
     friction.0 = BASE_FRICTION * friction_scale.0;
     gravity.0 = BASE_GRAVITY * gravity_scale.0;
 }
