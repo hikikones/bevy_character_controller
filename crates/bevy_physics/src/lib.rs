@@ -21,30 +21,52 @@ pub struct PhysicsPlugin;
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RapierConfiguration {
-            timestep_mode: TimestepMode::Interpolated {
+            timestep_mode: TimestepMode::Fixed {
                 dt: PHYSICS_TICK_RATE,
-                time_scale: 1.0,
+                // time_scale: 1.0,
                 substeps: 1,
             },
             ..Default::default()
         })
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
-        .add_stage_before(
-            CoreStage::PreUpdate,
-            PhysicsStage::PreUpdate,
-            SystemStage::parallel().with_run_criteria(tick_run_criteria),
-        )
-        .add_stage_before(
-            CoreStage::Update,
-            PhysicsStage::Update,
-            SystemStage::parallel().with_run_criteria(tick_run_criteria),
-        )
         .add_stage_after(
-            PhysicsStages::Writeback,
-            PhysicsStage::PostUpdate,
-            SystemStage::parallel().with_run_criteria(tick_run_criteria),
+            CoreStage::Update,
+            "physics",
+            Schedule::default()
+                .with_run_criteria(tick_run_criteria)
+                .with_stage(
+                    PhysicsStages::SyncBackend,
+                    SystemStage::parallel().with_system_set(
+                        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::SyncBackend),
+                    ),
+                )
+                .with_stage_after(
+                    PhysicsStages::SyncBackend,
+                    PhysicsStages::StepSimulation,
+                    SystemStage::parallel().with_system_set(
+                        RapierPhysicsPlugin::<NoUserData>::get_systems(
+                            PhysicsStages::StepSimulation,
+                        ),
+                    ),
+                )
+                .with_stage_after(
+                    PhysicsStages::StepSimulation,
+                    PhysicsStages::Writeback,
+                    SystemStage::parallel().with_system_set(
+                        RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::Writeback),
+                    ),
+                ),
         )
+        .add_stage_before(
+            CoreStage::Last,
+            PhysicsStages::DetectDespawn,
+            SystemStage::parallel().with_system_set(
+                RapierPhysicsPlugin::<NoUserData>::get_systems(PhysicsStages::DetectDespawn),
+            ),
+        )
+        .add_stage_before("physics", PhysicsStage::Update, SystemStage::parallel())
+        .add_stage_after("physics", PhysicsStage::PostUpdate, SystemStage::parallel())
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(TickPlugin)
         .add_plugin(InterpolationPlugin);
     }
@@ -52,7 +74,6 @@ impl Plugin for PhysicsPlugin {
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
 pub enum PhysicsStage {
-    PreUpdate,
     Update,
     PostUpdate,
 }
