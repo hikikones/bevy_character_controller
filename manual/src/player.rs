@@ -156,15 +156,14 @@ fn rotation(
 }
 
 fn jump(
-    mut player_q: Query<(&mut Force, &GravityScale, &JumpHeightScale), With<Player>>,
+    mut player_q: Query<(&mut Velocity, &GravityScale, &JumpHeightScale), With<Player>>,
     input_action: Res<InputAction>,
 ) {
     if let InputAction::Jump = *input_action {
-        let (mut force, gravity_scale, jump_height_scale) = player_q.single_mut();
-        force.0.y += f32::sqrt(
+        let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
+        velocity.linear.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
-        dbg!(force.0);
     }
 }
 

@@ -67,7 +67,6 @@ fn apply_velocity(
         let mut v = velocity.linear;
         v += force.0 * dt;
         v -= Vec3::Y * gravity.0 * dt;
-        dbg!(Vec3::Y * gravity.0 * dt);
         v = (v.x0z() * (1.0 - friction.0 * dt)).x_z(v.y);
 
         transform.translation += v * dt;
