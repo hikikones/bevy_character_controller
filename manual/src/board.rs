@@ -7,7 +7,7 @@ pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.insert_resource(Platforms::new())
+        app.insert_resource(Platforms::default())
             .add_startup_system_set(
                 SystemSet::new()
                     .with_system(set_platforms)
@@ -19,8 +19,8 @@ impl Plugin for BoardPlugin {
 #[derive(Resource, Deref, DerefMut)]
 pub struct Platforms(GridInfinite<SquareCell, Platform>);
 
-impl Platforms {
-    pub fn new() -> Self {
+impl Default for Platforms {
+    fn default() -> Self {
         Self(GridInfinite::new(1.0))
     }
 }
