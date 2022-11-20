@@ -34,6 +34,14 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
+#[derive(Bundle, Default)]
+pub struct PhysicsBundle {
+    velocity: Velocity,
+    force: Force,
+    friction: Friction,
+    gravity: Gravity,
+}
+
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Velocity(pub Vec3);
 
@@ -45,14 +53,6 @@ pub struct Friction(pub f32);
 
 #[derive(Component, Default)]
 pub struct Gravity(pub f32);
-
-#[derive(Bundle, Default)]
-pub struct PhysicsBundle {
-    velocity: Velocity,
-    force: Force,
-    friction: Friction,
-    gravity: Gravity,
-}
 
 pub mod systems {
     use bevy::prelude::*;
