@@ -117,10 +117,9 @@ fn movement(
 
     let (mut velocity, state, transform, speed_scale, ground_state) = player_q.single_mut();
 
-    velocity.linear = velocity
-        .linear
+    velocity.0 = velocity
         .move_towards(input.x0z() * BASE_SPEED, BASE_ACCELERATION)
-        .x_z(velocity.linear.y);
+        .x_z(velocity.y);
 
     // match ground_state {
     //     GroundState::Forward => {
@@ -161,7 +160,7 @@ fn jump(
 ) {
     if let InputAction::Jump = *input_action {
         let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
-        velocity.linear.y += f32::sqrt(
+        velocity.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
     }
@@ -215,7 +214,7 @@ fn on_ground_change(
         velocity,
     )) = player_q.get_single_mut()
     {
-        state.velocity_on_ground_change = velocity.linear;
+        state.velocity_on_ground_change = velocity.0;
 
         match ground_state {
             GroundState::None => {
@@ -249,7 +248,6 @@ fn on_ground_change(
 fn apply_physics_scalars(
     mut player_q: Query<
         (
-            &mut Acceleration,
             &mut Friction,
             &mut Gravity,
             &AccelerationScale,
@@ -259,16 +257,9 @@ fn apply_physics_scalars(
         With<Player>,
     >,
 ) {
-    let (
-        mut acceleration,
-        mut friction,
-        mut gravity,
-        acceleration_scale,
-        friction_scale,
-        gravity_scale,
-    ) = player_q.single_mut();
+    let (mut friction, mut gravity, acceleration_scale, friction_scale, gravity_scale) =
+        player_q.single_mut();
 
-    acceleration.0 = BASE_ACCELERATION * acceleration_scale.0;
     friction.0 = BASE_FRICTION * friction_scale.0;
     gravity.0 = BASE_GRAVITY * gravity_scale.0;
 }
