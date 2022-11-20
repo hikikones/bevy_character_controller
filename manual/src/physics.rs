@@ -21,6 +21,9 @@ pub struct Velocity {
     current: Vec3,
 }
 
+#[derive(Component, Default)]
+pub struct Force(pub Vec3);
+
 impl Velocity {
     pub fn current(&self) -> Vec3 {
         self.current
@@ -39,6 +42,7 @@ pub struct Gravity(pub f32);
 #[derive(Bundle, Default)]
 pub struct PhysicsBundle {
     velocity: Velocity,
+    force: Force,
     acceleration: Acceleration,
     friction: Friction,
     gravity_scale: Gravity,
@@ -48,37 +52,55 @@ fn apply_velocity(
     mut velocity_q: Query<(
         &mut Transform,
         &mut Velocity,
+        &mut Force,
         &Acceleration,
         &Friction,
         &Gravity,
     )>,
     time: Res<Time>,
 ) {
-    if let Ok((mut transform, mut velocity, acceleration, friction, gravity)) =
+    if let Ok((mut transform, mut velocity, mut force, acceleration, friction, gravity)) =
         velocity_q.get_single_mut()
     {
         let dt = time.delta_seconds();
 
-        // Horizontal
-        let mut horizontal = velocity.current.x0z();
-        horizontal += velocity.linear.x0z() * acceleration.0;
-        horizontal *= 1.0 - friction.0;
+        let mut v = velocity.linear;
+        v += force.0 * dt;
+        v -= Vec3::Y * gravity.0 * dt;
+        dbg!(Vec3::Y * gravity.0 * dt);
+        v = (v.x0z() * (1.0 - friction.0 * dt)).x_z(v.y);
 
-        // Vertical
-        let mut y = velocity.current.y;
-        y += velocity.linear.y;
-
-        // Apply velocity
-        transform.translation += horizontal.x_z(y) * dt;
-
-        // Gravity
-        y -= gravity.0 * dt;
-
-        velocity.current = horizontal.x_z(y);
+        transform.translation += v * dt;
 
         if transform.translation.y < 0.0 {
             transform.translation.y = 0.0;
-            velocity.current.y = 0.0;
+            v.y = 0.0;
         }
+
+        velocity.linear = v;
+
+        force.0 = Vec3::ZERO;
+
+        // // Horizontal
+        // let mut horizontal = velocity.current.x0z();
+        // horizontal += velocity.linear.x0z() * acceleration.0;
+        // horizontal *= 1.0 - friction.0;
+
+        // // Vertical
+        // let mut y = velocity.current.y;
+        // y += velocity.linear.y;
+
+        // // Apply velocity
+        // transform.translation += horizontal.x_z(y) * dt;
+
+        // // Gravity
+        // y -= gravity.0 * dt;
+
+        // velocity.current = horizontal.x_z(y);
+
+        // if transform.translation.y < 0.0 {
+        //     transform.translation.y = 0.0;
+        //     velocity.current.y = 0.0;
+        // }
     }
 }

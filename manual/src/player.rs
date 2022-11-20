@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use bevy_bootstrap::{InputAction, InputMovement};
-use bevy_extensions::{FromLookExt, Vec3SwizzlesExt};
+use bevy_extensions::{FromLookExt, MoveTowardsExt, Vec3SwizzlesExt};
 
 use crate::{board::*, physics::*};
 
@@ -26,9 +26,9 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-const BASE_SPEED: f32 = 2.5;
+const BASE_SPEED: f32 = 10.0;
 const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
-const BASE_FRICTION: f32 = 0.25;
+const BASE_FRICTION: f32 = BASE_SPEED * 1.0;
 const BASE_GRAVITY: f32 = 9.81;
 const BASE_JUMP_HEIGHT: f32 = 2.0;
 
@@ -111,20 +111,29 @@ fn movement(
     >,
     input: Res<InputMovement>,
 ) {
+    if input.is_zero() {
+        return;
+    }
+
     let (mut velocity, state, transform, speed_scale, ground_state) = player_q.single_mut();
 
-    match ground_state {
-        GroundState::Forward => {
-            velocity.linear = if state.velocity_on_ground_change.x0z().length_squared() > 1.0 {
-                transform.forward() * state.velocity_on_ground_change.x0z().length()
-            } else {
-                transform.forward()
-            };
-        }
-        _ => {
-            velocity.linear = input.x0z() * BASE_SPEED * speed_scale.0;
-        }
-    }
+    velocity.linear = velocity
+        .linear
+        .move_towards(input.x0z() * BASE_SPEED, BASE_ACCELERATION)
+        .x_z(velocity.linear.y);
+
+    // match ground_state {
+    //     GroundState::Forward => {
+    //         velocity.linear = if state.velocity_on_ground_change.x0z().length_squared() > 1.0 {
+    //             transform.forward() * state.velocity_on_ground_change.x0z().length()
+    //         } else {
+    //             transform.forward()
+    //         };
+    //     }
+    //     _ => {
+    //         velocity.linear = input.x0z() * BASE_SPEED * speed_scale.0;
+    //     }
+    // }
 }
 
 fn rotation(
@@ -147,14 +156,15 @@ fn rotation(
 }
 
 fn jump(
-    mut player_q: Query<(&mut Velocity, &GravityScale, &JumpHeightScale), With<Player>>,
+    mut player_q: Query<(&mut Force, &GravityScale, &JumpHeightScale), With<Player>>,
     input_action: Res<InputAction>,
 ) {
     if let InputAction::Jump = *input_action {
-        let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
-        velocity.linear.y += f32::sqrt(
+        let (mut force, gravity_scale, jump_height_scale) = player_q.single_mut();
+        force.0.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
+        dbg!(force.0);
     }
 }
 
