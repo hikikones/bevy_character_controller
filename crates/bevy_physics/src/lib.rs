@@ -64,12 +64,12 @@ impl Plugin for PhysicsPlugin {
             ),
         )
         .add_stage_before(
-            "physics",
+            CoreStage::Update,
             PhysicsStage::Update,
             SystemStage::parallel().with_run_criteria(tick_run_criteria),
         )
         .add_stage_after(
-            "physics",
+            CoreStage::PostUpdate,
             PhysicsStage::PostUpdate,
             SystemStage::parallel().with_run_criteria(tick_run_criteria),
         )
