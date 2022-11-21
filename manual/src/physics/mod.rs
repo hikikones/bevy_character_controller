@@ -71,7 +71,6 @@ pub struct PhysicsBundle {
     acceleration: Acceleration,
     friction: Friction,
     gravity: Gravity,
-    current_velocity: CurrentVelocity,
 }
 
 #[derive(Component, Debug, Default)]
@@ -96,28 +95,18 @@ pub struct Friction(pub f32);
 #[derive(Component, Default)]
 pub struct Gravity(pub f32);
 
-#[derive(Component, Default)]
-struct CurrentVelocity(Vec3);
-
 fn apply_velocity(
     mut velocity_q: Query<(
-        &mut CurrentVelocity,
-        &mut Transform,
         &mut Velocity,
+        &mut Transform,
         &Acceleration,
         &Friction,
         &Gravity,
     )>,
     tick: Res<PhysicsTick>,
 ) {
-    if let Ok((
-        mut current_velocity,
-        mut transform,
-        mut velocity,
-        acceleration,
-        friction,
-        gravity,
-    )) = velocity_q.get_single_mut()
+    if let Ok((mut velocity, mut transform, acceleration, friction, gravity)) =
+        velocity_q.get_single_mut()
     {
         let dt = tick.rate();
 
@@ -125,23 +114,6 @@ fn apply_velocity(
         v += velocity.added;
         v += velocity.target * acceleration.0;
         v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
-
-        // println!("APPLY BEFORE: {}", v);
-        // println!("VELOCITY: {}", velocity.0);
-        // v += velocity.0 * Vec3::new(acceleration.0, gravity.0, acceleration.0);
-        // v += velocity.0.x0z() * acceleration.0;
-        // v -= Vec3::Y * gravity.0 * dt;
-        // v.y += velocity.0.y;
-        // v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
-
-        // println!("APPLY AFTER: {}", v);
-
-        // let mut v = velocity.0;
-        // v += force.0 * dt;
-        // v -= Vec3::Y * gravity.0 * dt;
-        // // v = (v.x0z() * ((1.0 - friction.0) * dt)).x_z(v.y);
-        // v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
-        // // v = (v.x0z() * friction.0.powf(dt)).x_z(v.y);
 
         transform.translation += v * dt;
 
@@ -154,11 +126,5 @@ fn apply_velocity(
 
         velocity.current = v;
         velocity.added = Vec3::ZERO;
-        // velocity.target = Vec3::ZERO;
-
-        // current_velocity.0 = v;
-
-        // velocity.0 = v;
-        // force.0 = Vec3::ZERO;
     }
 }

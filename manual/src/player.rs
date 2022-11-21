@@ -220,53 +220,25 @@ fn movement(
             &PlayerState,
             &Transform,
             &SpeedScale,
-            &AccelerationScale,
         ),
         With<Player>,
     >,
     input: Res<InputMovement>,
 ) {
-    // if input.is_zero() {
-    //     // return;
-    // }
-
-    let (mut velocity, ground_state, player_state, transform, speed_scale, acceleration_scale) =
-        player_q.single_mut();
+    let (mut velocity, ground_state, player_state, transform, speed_scale) = player_q.single_mut();
 
     let speed = BASE_SPEED * speed_scale.0;
-    let acceleration = BASE_ACCELERATION * acceleration_scale.0;
 
     match ground_state {
         GroundState::Forward => {
-            let speed = player_state
+            let forward_speed = player_state
                 .velocity_target_on_ground_change
                 .x0z()
                 .length()
                 .max(1.0);
-            velocity.target = speed * transform.forward();
-            // velocity.target = if player_state
-            //     .velocity_target_on_ground_change
-            //     .x0z()
-            //     .length_squared()
-            //     > 1.0
-            // {
-            //     // velocity.move_towards(
-            //     //     transform.forward() * player_state.velocity_on_ground_change.x0z().length(),
-            //     //     acceleration,
-            //     // );
-            //     // dbg!(velocity.0);
-            //     // dbg!(player_state.velocity_on_ground_change.x0z().length());
-            //     // velocity.0 =
-            //     //     transform.forward() * player_state.velocity_on_ground_change.x0z().length();
-            //     transform.forward() * player_state.velocity_target_on_ground_change.x0z().length()
-            // } else {
-            //     transform.forward()
-            //     // velocity.move_towards(transform.forward(), acceleration);
-            // };
-            // dbg!(velocity);
+            velocity.target = transform.forward() * forward_speed;
         }
         _ => {
-            // velocity.move_towards(input.x0z() * speed, acceleration);
             velocity.target = input.x0z() * speed;
         }
     }
