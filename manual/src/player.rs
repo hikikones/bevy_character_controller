@@ -107,7 +107,7 @@ struct Scalars {
     jump_height: f32,
 }
 
-const BASE_SPEED: f32 = 4.0;
+const BASE_SPEED: f32 = 3.5;
 const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
 const BASE_FRICTION: f32 = 0.4;
 const BASE_GRAVITY: f32 = 9.81;
@@ -118,7 +118,7 @@ impl GroundState {
         match self {
             GroundState::None => Scalars {
                 speed: 1.0,
-                acceleration: 0.1,
+                acceleration: 0.05,
                 friction: 0.1,
                 gravity: 1.0,
                 jump_height: 0.0,
@@ -131,7 +131,7 @@ impl GroundState {
                 jump_height: 1.0,
             },
             GroundState::Slippery => Scalars {
-                speed: 2.0,
+                speed: 1.5,
                 acceleration: 0.02,
                 friction: 0.01,
                 gravity: 1.0,
