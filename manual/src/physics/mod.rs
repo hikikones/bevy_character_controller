@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_extensions::{MoveTowardsExt, Vec3SwizzlesExt};
+use bevy_extensions::Vec3SwizzlesExt;
 
 mod interpolation;
 mod tick;
@@ -16,6 +16,14 @@ pub enum PhysicsStage {
     Last,
 }
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+pub enum PhysicsLabel {
+    PreUpdate,
+    Update,
+    PostUpdate,
+    Last,
+}
+
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
@@ -23,24 +31,34 @@ impl Plugin for PhysicsPlugin {
         app.add_stage_before(
             CoreStage::PreUpdate,
             PhysicsStage::PreUpdate,
-            SystemStage::parallel().with_run_criteria(tick_run_criteria),
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(SystemSet::new().label(PhysicsLabel::PreUpdate)),
         )
         .add_stage_before(
             CoreStage::Update,
             PhysicsStage::Update,
-            SystemStage::parallel().with_run_criteria(tick_run_criteria),
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(SystemSet::new().label(PhysicsLabel::Update)),
         )
         .add_stage_before(
             CoreStage::PostUpdate,
             PhysicsStage::PostUpdate,
             SystemStage::parallel()
                 .with_run_criteria(tick_run_criteria)
-                .with_system_set(SystemSet::new().with_system(systems::apply_velocity)),
+                .with_system_set(
+                    SystemSet::new()
+                        .label(PhysicsLabel::PostUpdate)
+                        .with_system(apply_velocity),
+                ),
         )
         .add_stage_before(
             CoreStage::Last,
             PhysicsStage::Last,
-            SystemStage::parallel().with_run_criteria(tick_run_criteria),
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(SystemSet::new().label(PhysicsLabel::Last)),
         )
         .add_plugin(TickPlugin)
         .add_plugin(InterpolationPlugin);
@@ -50,28 +68,26 @@ impl Plugin for PhysicsPlugin {
 #[derive(Bundle, Default)]
 pub struct PhysicsBundle {
     velocity: Velocity,
-    force: Force,
+    acceleration: Acceleration,
     friction: Friction,
     gravity: Gravity,
 }
 
-#[derive(Component, Default, Deref, DerefMut)]
-pub struct Velocity(pub Vec3);
+#[derive(Component, Debug, Default)]
+pub struct Velocity {
+    pub target: Vec3,
+    current: Vec3,
+    added: Vec3,
+}
 
 impl Velocity {
-    pub fn move_towards(&mut self, target: Vec3, max_delta: f32) {
-        self.0 = self.0.x0z().move_towards(target, max_delta).x_z(self.0.y);
+    pub fn add(&mut self, v: Vec3) {
+        self.added += v;
     }
 }
 
-#[derive(Component, Default, Deref, DerefMut)]
-pub struct Force(pub Vec3);
-
-impl Force {
-    pub fn _add(&mut self, f: Vec3) {
-        self.0 += f;
-    }
-}
+#[derive(Component, Default)]
+pub struct Acceleration(pub f32);
 
 #[derive(Component, Default)]
 pub struct Friction(pub f32);
@@ -79,43 +95,36 @@ pub struct Friction(pub f32);
 #[derive(Component, Default)]
 pub struct Gravity(pub f32);
 
-pub mod systems {
-    use bevy::prelude::*;
+fn apply_velocity(
+    mut velocity_q: Query<(
+        &mut Velocity,
+        &mut Transform,
+        &Acceleration,
+        &Friction,
+        &Gravity,
+    )>,
+    tick: Res<PhysicsTick>,
+) {
+    if let Ok((mut velocity, mut transform, acceleration, friction, gravity)) =
+        velocity_q.get_single_mut()
+    {
+        let dt = tick.rate();
 
-    use super::*;
+        let mut v = velocity.current;
+        v += velocity.added;
+        v += velocity.target * acceleration.0;
+        v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
 
-    pub fn apply_velocity(
-        mut velocity_q: Query<(
-            &mut Transform,
-            &mut Velocity,
-            &mut Force,
-            &Friction,
-            &Gravity,
-        )>,
-        // time: Res<Time>,
-        tick: Res<PhysicsTick>,
-    ) {
-        if let Ok((mut transform, mut velocity, mut force, friction, gravity)) =
-            velocity_q.get_single_mut()
-        {
-            let dt = tick.rate();
+        transform.translation += v * dt;
 
-            let mut v = velocity.0;
-            v += force.0 * dt;
-            v -= Vec3::Y * gravity.0 * dt;
-            // v = (v.x0z() * ((1.0 - friction.0) * dt)).x_z(v.y);
-            v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
-            // v = (v.x0z() * friction.0.powf(dt)).x_z(v.y);
+        v.y -= gravity.0 * dt;
 
-            transform.translation += v * dt;
-
-            if transform.translation.y < 0.0 {
-                transform.translation.y = 0.0;
-                v.y = 0.0;
-            }
-
-            velocity.0 = v;
-            force.0 = Vec3::ZERO;
+        if transform.translation.y < 0.0 {
+            transform.translation.y = 0.0;
+            v.y = 0.0;
         }
+
+        velocity.current = v;
+        velocity.added = Vec3::ZERO;
     }
 }
