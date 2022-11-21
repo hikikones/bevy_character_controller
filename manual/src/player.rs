@@ -23,7 +23,7 @@ impl Plugin for PlayerPlugin {
         .add_system_set_to_stage(
             PhysicsStage::PostUpdate,
             SystemSet::new()
-                .before(crate::physics::systems::apply_velocity)
+                .before(PhysicsLabel::PostUpdate)
                 .with_system(apply_physics_scalars),
         );
     }
@@ -290,17 +290,17 @@ fn jump(
 ) {
     if let InputAction::Jump = *input_action {
         let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
-        velocity.y += f32::sqrt(
+        velocity.0.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
-        dbg!(velocity.y);
+        dbg!(velocity.0.y);
     }
 }
 
 fn apply_physics_scalars(
     mut player_q: Query<
         (
-            &mut Acc,
+            &mut Acceleration,
             &mut Friction,
             &mut Gravity,
             &AccelerationScale,
