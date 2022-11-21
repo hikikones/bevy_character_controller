@@ -68,7 +68,7 @@ impl Default for PlayerBundle {
 #[derive(Component)]
 struct Player;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 struct PlayerState {
     input_on_ground_change: Vec3,
     velocity_target_on_ground_change: Vec3,
@@ -238,25 +238,32 @@ fn movement(
 
     match ground_state {
         GroundState::Forward => {
-            velocity.target = if player_state
+            let speed = player_state
                 .velocity_target_on_ground_change
                 .x0z()
-                .length_squared()
-                > 1.0
-            {
-                // velocity.move_towards(
-                //     transform.forward() * player_state.velocity_on_ground_change.x0z().length(),
-                //     acceleration,
-                // );
-                // dbg!(velocity.0);
-                // dbg!(player_state.velocity_on_ground_change.x0z().length());
-                // velocity.0 =
-                //     transform.forward() * player_state.velocity_on_ground_change.x0z().length();
-                transform.forward() * player_state.velocity_target_on_ground_change.x0z().length()
-            } else {
-                transform.forward()
-                // velocity.move_towards(transform.forward(), acceleration);
-            };
+                .length()
+                .max(1.0);
+            velocity.target = speed * transform.forward();
+            // velocity.target = if player_state
+            //     .velocity_target_on_ground_change
+            //     .x0z()
+            //     .length_squared()
+            //     > 1.0
+            // {
+            //     // velocity.move_towards(
+            //     //     transform.forward() * player_state.velocity_on_ground_change.x0z().length(),
+            //     //     acceleration,
+            //     // );
+            //     // dbg!(velocity.0);
+            //     // dbg!(player_state.velocity_on_ground_change.x0z().length());
+            //     // velocity.0 =
+            //     //     transform.forward() * player_state.velocity_on_ground_change.x0z().length();
+            //     transform.forward() * player_state.velocity_target_on_ground_change.x0z().length()
+            // } else {
+            //     transform.forward()
+            //     // velocity.move_towards(transform.forward(), acceleration);
+            // };
+            // dbg!(velocity);
         }
         _ => {
             // velocity.move_towards(input.x0z() * speed, acceleration);

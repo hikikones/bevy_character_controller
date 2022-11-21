@@ -74,7 +74,7 @@ pub struct PhysicsBundle {
     current_velocity: CurrentVelocity,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Debug, Default)]
 pub struct Velocity {
     pub target: Vec3,
     current: Vec3,
@@ -154,7 +154,7 @@ fn apply_velocity(
 
         velocity.current = v;
         velocity.added = Vec3::ZERO;
-        velocity.target = Vec3::ZERO;
+        // velocity.target = Vec3::ZERO;
 
         // current_velocity.0 = v;
 
