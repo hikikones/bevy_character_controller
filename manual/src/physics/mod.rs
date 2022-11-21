@@ -50,9 +50,11 @@ impl Plugin for PhysicsPlugin {
 #[derive(Bundle, Default)]
 pub struct PhysicsBundle {
     velocity: Velocity,
+    acceleration: Acc,
     force: Force,
     friction: Friction,
     gravity: Gravity,
+    current_velocity: CurrentVelocity,
 }
 
 #[derive(Component, Default, Deref, DerefMut)]
@@ -63,6 +65,9 @@ impl Velocity {
         self.0 = self.0.x0z().move_towards(target, max_delta).x_z(self.0.y);
     }
 }
+
+#[derive(Component, Default)]
+pub struct Acc(pub f32);
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Force(pub Vec3);
@@ -79,6 +84,9 @@ pub struct Friction(pub f32);
 #[derive(Component, Default)]
 pub struct Gravity(pub f32);
 
+#[derive(Component, Default)]
+pub struct CurrentVelocity(Vec3);
+
 pub mod systems {
     use bevy::prelude::*;
 
@@ -86,36 +94,58 @@ pub mod systems {
 
     pub fn apply_velocity(
         mut velocity_q: Query<(
+            &mut CurrentVelocity,
             &mut Transform,
             &mut Velocity,
             &mut Force,
+            &Acc,
             &Friction,
             &Gravity,
         )>,
         // time: Res<Time>,
         tick: Res<PhysicsTick>,
     ) {
-        if let Ok((mut transform, mut velocity, mut force, friction, gravity)) =
-            velocity_q.get_single_mut()
+        if let Ok((
+            mut current_velocity,
+            mut transform,
+            mut velocity,
+            mut force,
+            acceleration,
+            friction,
+            gravity,
+        )) = velocity_q.get_single_mut()
         {
             let dt = tick.rate();
 
-            let mut v = velocity.0;
-            v += force.0 * dt;
-            v -= Vec3::Y * gravity.0 * dt;
-            // v = (v.x0z() * ((1.0 - friction.0) * dt)).x_z(v.y);
+            let mut v = current_velocity.0;
+            // v += velocity.0 * Vec3::new(acceleration.0, gravity.0, acceleration.0);
+            v += velocity.0.x0z() * acceleration.0;
+            // v -= Vec3::Y * gravity.0 * dt;
+            v.y += velocity.0.y;
             v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
-            // v = (v.x0z() * friction.0.powf(dt)).x_z(v.y);
+
+            dbg!(v);
+
+            // let mut v = velocity.0;
+            // v += force.0 * dt;
+            // v -= Vec3::Y * gravity.0 * dt;
+            // // v = (v.x0z() * ((1.0 - friction.0) * dt)).x_z(v.y);
+            // v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
+            // // v = (v.x0z() * friction.0.powf(dt)).x_z(v.y);
 
             transform.translation += v * dt;
+
+            v.y -= gravity.0 * dt;
 
             if transform.translation.y < 0.0 {
                 transform.translation.y = 0.0;
                 v.y = 0.0;
             }
 
-            velocity.0 = v;
-            force.0 = Vec3::ZERO;
+            current_velocity.0 = v;
+
+            // velocity.0 = v;
+            // force.0 = Vec3::ZERO;
         }
     }
 }
