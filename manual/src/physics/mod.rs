@@ -54,31 +54,37 @@ impl Plugin for PhysicsPlugin {
             //             SystemStage::parallel().with_system_set(Self::get_systems(PhysicsStage::Last)),
             //         ),
             // )
-            .add_stage_after(
-                CoreStage::Update,
+            .add_stage_before(
+                CoreStage::PreUpdate,
                 PhysicsStage::PreUpdate,
                 SystemStage::parallel()
+                    .with_run_criteria(tick_run_criteria)
                     .with_system_set(SystemSet::new().label(PhysicsLabel::PreUpdate)),
             )
-            .add_stage_after(
-                PhysicsStage::PreUpdate,
+            .add_stage_before(
+                CoreStage::Update,
                 PhysicsStage::Update,
                 SystemStage::parallel()
+                    .with_run_criteria(tick_run_criteria)
                     .with_system_set(SystemSet::new().label(PhysicsLabel::Update)),
             )
-            .add_stage_after(
-                PhysicsStage::Update,
+            .add_stage_before(
+                CoreStage::PostUpdate,
                 PhysicsStage::PostUpdate,
-                SystemStage::parallel().with_system_set(
-                    SystemSet::new()
-                        .label(PhysicsLabel::PostUpdate)
-                        .with_system(apply_velocity),
-                ),
+                SystemStage::parallel()
+                    .with_run_criteria(tick_run_criteria)
+                    .with_system_set(
+                        SystemSet::new()
+                            .label(PhysicsLabel::PostUpdate)
+                            .with_system(apply_velocity),
+                    ),
             )
-            .add_stage_after(
-                PhysicsStage::PostUpdate,
+            .add_stage_before(
+                CoreStage::Last,
                 PhysicsStage::Last,
-                SystemStage::parallel().with_system_set(SystemSet::new().label(PhysicsLabel::Last)),
+                SystemStage::parallel()
+                    .with_run_criteria(tick_run_criteria)
+                    .with_system_set(SystemSet::new().label(PhysicsLabel::Last)),
             )
             // .add_stage_before(
             //     CoreStage::PreUpdate,

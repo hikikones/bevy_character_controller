@@ -238,7 +238,7 @@ fn movement(
 
     match ground_state {
         GroundState::Forward => {
-            velocity.0 = if player_state
+            velocity.0 += if player_state
                 .velocity_on_ground_change
                 .x0z()
                 .length_squared()
@@ -260,7 +260,7 @@ fn movement(
         }
         _ => {
             // velocity.move_towards(input.x0z() * speed, acceleration);
-            velocity.0 = input.x0z() * speed;
+            velocity.0 += input.x0z() * speed;
         }
     }
 }
