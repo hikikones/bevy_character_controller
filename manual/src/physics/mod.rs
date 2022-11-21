@@ -28,88 +28,40 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // .add_stage_after(
-            //     CoreStage::Update,
-            //     "physics",
-            //     Schedule::default()
-            //         .with_run_criteria(tick_run_criteria)
-            //         .with_stage(
-            //             PhysicsStage::PreUpdate,
-            //             SystemStage::parallel()
-            //                 .with_system_set(Self::get_systems(PhysicsStage::PreUpdate)),
-            //         )
-            //         .with_stage(
-            //             PhysicsStage::Update,
-            //             SystemStage::parallel()
-            //                 .with_system_set(Self::get_systems(PhysicsStage::Update)),
-            //         )
-            //         .with_stage(
-            //             PhysicsStage::PostUpdate,
-            //             SystemStage::parallel()
-            //                 .with_system_set(Self::get_systems(PhysicsStage::PostUpdate)),
-            //         )
-            //         .with_stage(
-            //             PhysicsStage::Last,
-            //             SystemStage::parallel().with_system_set(Self::get_systems(PhysicsStage::Last)),
-            //         ),
-            // )
-            .add_stage_before(
-                CoreStage::PreUpdate,
-                PhysicsStage::PreUpdate,
-                SystemStage::parallel()
-                    .with_run_criteria(tick_run_criteria)
-                    .with_system_set(SystemSet::new().label(PhysicsLabel::PreUpdate)),
-            )
-            .add_stage_before(
-                CoreStage::Update,
-                PhysicsStage::Update,
-                SystemStage::parallel()
-                    .with_run_criteria(tick_run_criteria)
-                    .with_system_set(SystemSet::new().label(PhysicsLabel::Update)),
-            )
-            .add_stage_before(
-                CoreStage::PostUpdate,
-                PhysicsStage::PostUpdate,
-                SystemStage::parallel()
-                    .with_run_criteria(tick_run_criteria)
-                    .with_system_set(
-                        SystemSet::new()
-                            .label(PhysicsLabel::PostUpdate)
-                            .with_system(apply_velocity),
-                    ),
-            )
-            .add_stage_before(
-                CoreStage::Last,
-                PhysicsStage::Last,
-                SystemStage::parallel()
-                    .with_run_criteria(tick_run_criteria)
-                    .with_system_set(SystemSet::new().label(PhysicsLabel::Last)),
-            )
-            // .add_stage_before(
-            //     CoreStage::PreUpdate,
-            //     PhysicsStage::PreUpdate,
-            //     SystemStage::parallel().with_run_criteria(tick_run_criteria),
-            // )
-            // .add_stage_before(
-            //     CoreStage::Update, // NOOOO!!! Put all fixed stages AFTER UPDATE.....
-            //     PhysicsStage::Update,
-            //     SystemStage::parallel().with_run_criteria(tick_run_criteria),
-            // )
-            // .add_stage_before(
-            //     CoreStage::PostUpdate,
-            //     PhysicsStage::PostUpdate,
-            //     SystemStage::parallel()
-            //         .with_run_criteria(tick_run_criteria)
-            //         .with_system_set(SystemSet::new().with_system(systems::apply_velocity)),
-            // )
-            // .add_stage_before(
-            //     CoreStage::Last,
-            //     PhysicsStage::Last,
-            //     SystemStage::parallel().with_run_criteria(tick_run_criteria),
-            // )
-            .add_plugin(TickPlugin)
-            .add_plugin(InterpolationPlugin);
+        app.add_stage_before(
+            CoreStage::PreUpdate,
+            PhysicsStage::PreUpdate,
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(SystemSet::new().label(PhysicsLabel::PreUpdate)),
+        )
+        .add_stage_before(
+            CoreStage::Update,
+            PhysicsStage::Update,
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(SystemSet::new().label(PhysicsLabel::Update)),
+        )
+        .add_stage_before(
+            CoreStage::PostUpdate,
+            PhysicsStage::PostUpdate,
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(
+                    SystemSet::new()
+                        .label(PhysicsLabel::PostUpdate)
+                        .with_system(apply_velocity),
+                ),
+        )
+        .add_stage_before(
+            CoreStage::Last,
+            PhysicsStage::Last,
+            SystemStage::parallel()
+                .with_run_criteria(tick_run_criteria)
+                .with_system_set(SystemSet::new().label(PhysicsLabel::Last)),
+        )
+        .add_plugin(TickPlugin)
+        .add_plugin(InterpolationPlugin);
     }
 }
 
