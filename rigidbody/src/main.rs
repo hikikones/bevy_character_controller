@@ -18,7 +18,7 @@ fn main() {
         )
         .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
         .add_system_set_to_stage(
-            PhysicsStage::PostUpdate,
+            PhysicsStage::PreUpdate,
             SystemSet::new()
                 .with_system(set_ground_state)
                 .with_system(on_ground_change.after(set_ground_state)),

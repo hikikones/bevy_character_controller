@@ -13,7 +13,7 @@ fn main() {
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
         .add_system_set_to_stage(
-            CoreStage::Update,
+            PhysicsStage::Update,
             SystemSet::new().with_system(movement),
             // .with_system(rotation)
             // .with_system(jump),
@@ -26,15 +26,26 @@ struct Player;
 
 fn setup(mut commands: Commands) {
     // Player
-    let player = commands.spawn_actor(ActorConfig::default());
-    commands.entity(player).insert((
-        Player,
-        Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
-        KinematicCharacterController::default(),
-    ));
+    let player = commands
+        .spawn((
+            Player,
+            TransformBundle::default(),
+            KinematicCharacterController::default(),
+            RigidBody::KinematicPositionBased,
+            Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
+        ))
+        .id();
+
+    // Actor
+    let actor = commands.spawn_actor(ActorConfig::default());
+    commands.entity(actor).insert(PhysicsInterpolation {
+        target: player,
+        translate: true,
+        rotate: false,
+    });
 
     // Camera follow
-    commands.camera_follow(player);
+    commands.camera_follow(actor);
 }
 
 const MAX_SPEED: f32 = 10.0;

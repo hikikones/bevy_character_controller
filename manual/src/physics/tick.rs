@@ -9,7 +9,7 @@ impl Plugin for TickPlugin {
     }
 }
 
-pub(super) const PHYSICS_TICK_RATE: f32 = 1.0 / 20.0;
+pub(super) const PHYSICS_TICK_RATE: f32 = 1.0 / 33.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick(f32);
