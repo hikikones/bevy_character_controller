@@ -51,7 +51,7 @@ impl Default for PlayerBundle {
             marker: Player,
             state: PlayerState {
                 input_on_ground_change: Vec3::ZERO,
-                velocity_on_ground_change: Vec3::ZERO,
+                velocity_target_on_ground_change: Vec3::ZERO,
                 previous_ground_state: GroundState::default(),
             },
             ground_state: GroundState::default(),
@@ -71,7 +71,7 @@ struct Player;
 #[derive(Component)]
 struct PlayerState {
     input_on_ground_change: Vec3,
-    velocity_on_ground_change: Vec3,
+    velocity_target_on_ground_change: Vec3,
     previous_ground_state: GroundState,
 }
 
@@ -200,7 +200,7 @@ fn on_ground_change(
         mut jump_height_scale,
     )) = player_q.get_single_mut()
     {
-        player_state.velocity_on_ground_change = velocity.0;
+        player_state.velocity_target_on_ground_change = velocity.target;
         player_state.input_on_ground_change = input.x0z();
 
         let scalars = ground_state.scalars();
@@ -238,8 +238,8 @@ fn movement(
 
     match ground_state {
         GroundState::Forward => {
-            velocity.0 += if player_state
-                .velocity_on_ground_change
+            velocity.target = if player_state
+                .velocity_target_on_ground_change
                 .x0z()
                 .length_squared()
                 > 1.0
@@ -252,7 +252,7 @@ fn movement(
                 // dbg!(player_state.velocity_on_ground_change.x0z().length());
                 // velocity.0 =
                 //     transform.forward() * player_state.velocity_on_ground_change.x0z().length();
-                transform.forward() * player_state.velocity_on_ground_change.x0z().length()
+                transform.forward() * player_state.velocity_target_on_ground_change.x0z().length()
             } else {
                 transform.forward()
                 // velocity.move_towards(transform.forward(), acceleration);
@@ -260,7 +260,7 @@ fn movement(
         }
         _ => {
             // velocity.move_towards(input.x0z() * speed, acceleration);
-            velocity.0 += input.x0z() * speed;
+            velocity.target = input.x0z() * speed;
         }
     }
 }
@@ -290,10 +290,11 @@ fn jump(
 ) {
     if let InputAction::Jump = *input_action {
         let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
-        velocity.0.y += f32::sqrt(
+
+        let y = f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
-        dbg!(velocity.0.y);
+        velocity.add(Vec3::Y * y);
     }
 }
 

@@ -75,7 +75,17 @@ pub struct PhysicsBundle {
 }
 
 #[derive(Component, Default)]
-pub struct Velocity(pub Vec3);
+pub struct Velocity {
+    pub target: Vec3,
+    current: Vec3,
+    added: Vec3,
+}
+
+impl Velocity {
+    pub fn add(&mut self, v: Vec3) {
+        self.added += v;
+    }
+}
 
 #[derive(Component, Default)]
 pub struct Acceleration(pub f32);
@@ -93,28 +103,38 @@ fn apply_velocity(
     mut velocity_q: Query<(
         &mut CurrentVelocity,
         &mut Transform,
-        &Velocity,
+        &mut Velocity,
         &Acceleration,
         &Friction,
         &Gravity,
     )>,
     tick: Res<PhysicsTick>,
 ) {
-    if let Ok((mut current_velocity, mut transform, velocity, acceleration, friction, gravity)) =
-        velocity_q.get_single_mut()
+    if let Ok((
+        mut current_velocity,
+        mut transform,
+        mut velocity,
+        acceleration,
+        friction,
+        gravity,
+    )) = velocity_q.get_single_mut()
     {
         let dt = tick.rate();
 
-        let mut v = current_velocity.0;
-        println!("APPLY BEFORE: {}", v);
-        println!("VELOCITY: {}", velocity.0);
-        // v += velocity.0 * Vec3::new(acceleration.0, gravity.0, acceleration.0);
-        v += velocity.0.x0z() * acceleration.0;
-        // v -= Vec3::Y * gravity.0 * dt;
-        v.y += velocity.0.y;
+        let mut v = velocity.current;
+        v += velocity.added;
+        v += velocity.target * acceleration.0;
         v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
 
-        println!("APPLY AFTER: {}", v);
+        // println!("APPLY BEFORE: {}", v);
+        // println!("VELOCITY: {}", velocity.0);
+        // v += velocity.0 * Vec3::new(acceleration.0, gravity.0, acceleration.0);
+        // v += velocity.0.x0z() * acceleration.0;
+        // v -= Vec3::Y * gravity.0 * dt;
+        // v.y += velocity.0.y;
+        // v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
+
+        // println!("APPLY AFTER: {}", v);
 
         // let mut v = velocity.0;
         // v += force.0 * dt;
@@ -132,7 +152,11 @@ fn apply_velocity(
             v.y = 0.0;
         }
 
-        current_velocity.0 = v;
+        velocity.current = v;
+        velocity.added = Vec3::ZERO;
+        velocity.target = Vec3::ZERO;
+
+        // current_velocity.0 = v;
 
         // velocity.0 = v;
         // force.0 = Vec3::ZERO;
