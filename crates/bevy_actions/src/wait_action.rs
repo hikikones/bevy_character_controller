@@ -75,7 +75,7 @@ struct Agent(Entity);
 
 fn wait(mut wait_q: Query<(&mut Wait, &Agent)>, mut commands: Commands, tick: Res<PhysicsTick>) {
     for (mut wait, agent) in wait_q.iter_mut() {
-        wait.0 -= tick.rate();
+        wait.0 -= tick.delta();
 
         if wait.0 <= 0.0 {
             commands.actions(agent.0).next();

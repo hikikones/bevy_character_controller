@@ -32,7 +32,7 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RapierConfiguration {
             timestep_mode: TimestepMode::Fixed {
-                dt: PHYSICS_STEP as f32,
+                dt: PHYSICS_DELTA as f32,
                 substeps: 1,
             },
             ..Default::default()

@@ -104,7 +104,7 @@ fn movement(
     tick: Res<PhysicsTick>,
 ) {
     for (agent, mut transform, target, speed) in move_q.iter_mut() {
-        transform.move_towards(target.0, speed.0 * tick.rate());
+        transform.move_towards(target.0, speed.0 * tick.delta());
 
         if transform.translation == target.0 {
             commands.actions(agent).next();
@@ -114,6 +114,7 @@ fn movement(
 
 fn rotation(mut rot_q: Query<(&mut Transform, &Speed, &Rotate)>, tick: Res<PhysicsTick>) {
     for (mut transform, speed, rotate) in rot_q.iter_mut() {
-        transform.rotation = Quat::slerp(transform.rotation, rotate.0, speed.0 * 2.0 * tick.rate());
+        transform.rotation =
+            Quat::slerp(transform.rotation, rotate.0, speed.0 * 2.0 * tick.delta());
     }
 }

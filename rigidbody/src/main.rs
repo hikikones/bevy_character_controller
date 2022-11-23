@@ -192,7 +192,7 @@ fn movement(
     let direction = input.x0z();
     let current_velocity = velocity.linvel.x0z();
     let target_velocity = direction * BASE_SPEED * speed_scale.0;
-    let max_delta = BASE_ACCELERATION * acceleration_scale.0 * tick.rate();
+    let max_delta = BASE_ACCELERATION * acceleration_scale.0 * tick.delta();
 
     velocity.linvel = current_velocity
         .move_towards(target_velocity, max_delta)

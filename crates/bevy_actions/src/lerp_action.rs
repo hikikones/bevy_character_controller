@@ -132,7 +132,7 @@ fn lerp(
         if let Ok(mut transform) = transform_q.get_mut(target.0) {
             timer
                 .0
-                .tick(std::time::Duration::from_secs_f32(tick.rate()));
+                .tick(std::time::Duration::from_secs_f32(tick.delta()));
 
             let t = timer.0.percent();
             let smoothstep = 3.0 * t * t - 2.0 * t * t * t;
