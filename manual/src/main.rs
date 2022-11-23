@@ -54,11 +54,14 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
 
     // Actor
     let actor = commands.spawn_actor(ActorConfig::default());
-    commands.entity(actor).insert(PhysicsInterpolation {
-        target: player,
-        translate: true,
-        rotate: true,
-    });
+    // commands.entity(actor).insert(PhysicsInterpolation {
+    //     target: player,
+    //     translate: true,
+    //     rotate: true,
+    // });
+    commands
+        .entity(actor)
+        .insert(PhysicsInterpolation::new(player));
 
     // Camera follow
     commands.camera_follow(actor);

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bevy_bootstrap::{InputAction, InputMovement};
+use bevy_bootstrap::{Actor, InputAction, InputMovement};
 use bevy_extensions::{FromLookExt, Vec3SwizzlesExt};
 
 use crate::{board::*, physics::*};
@@ -13,19 +13,26 @@ impl Plugin for PlayerPlugin {
             CoreStage::Update,
             SystemSet::new().with_system(rotation).with_system(jump),
         )
-        .add_system_set_to_stage(
-            PhysicsStage::PreUpdate,
+        .add_physics_system_set(
             SystemSet::new()
                 .with_system(set_ground_state)
-                .with_system(on_ground_change.after(set_ground_state)),
-        )
-        .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
-        .add_system_set_to_stage(
-            PhysicsStage::PostUpdate,
-            SystemSet::new()
-                .before(PhysicsLabel::PostUpdate)
-                .with_system(apply_physics_scalars),
+                .with_system(on_ground_change.after(set_ground_state))
+                .with_system(movement.after(on_ground_change))
+                .with_system(apply_physics_scalars.after(on_ground_change)),
         );
+        // .add_system_set_to_stage(
+        //     PhysicsStage::PreUpdate,
+        //     SystemSet::new()
+        //         .with_system(set_ground_state)
+        //         .with_system(on_ground_change.after(set_ground_state)),
+        // )
+        // .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
+        // .add_system_set_to_stage(
+        //     PhysicsStage::PostUpdate,
+        //     SystemSet::new()
+        //         .before(PhysicsLabel::PostUpdate)
+        //         .with_system(apply_physics_scalars),
+        // );
     }
 }
 
@@ -213,19 +220,11 @@ fn on_ground_change(
 }
 
 fn movement(
-    mut player_q: Query<
-        (
-            &mut Velocity,
-            &GroundState,
-            &PlayerState,
-            &Transform,
-            &SpeedScale,
-        ),
-        With<Player>,
-    >,
+    mut player_q: Query<(&mut Velocity, &GroundState, &PlayerState, &SpeedScale), With<Player>>,
+    actor_q: Query<&Transform, (With<Actor>, Without<Player>)>,
     input: Res<InputMovement>,
 ) {
-    let (mut velocity, ground_state, player_state, transform, speed_scale) = player_q.single_mut();
+    let (mut velocity, ground_state, player_state, speed_scale) = player_q.single_mut();
 
     let speed = BASE_SPEED * speed_scale.0;
 
@@ -236,7 +235,7 @@ fn movement(
                 .x0z()
                 .length()
                 .max(1.0);
-            velocity.target = transform.forward() * forward_speed;
+            velocity.target = actor_q.single().forward() * forward_speed;
         }
         _ => {
             velocity.target = input.x0z() * speed;
@@ -245,7 +244,7 @@ fn movement(
 }
 
 fn rotation(
-    mut player_q: Query<&mut Transform, With<Player>>,
+    mut actor_q: Query<&mut Transform, With<Actor>>,
     input: Res<InputMovement>,
     time: Res<Time>,
 ) {
@@ -255,7 +254,7 @@ fn rotation(
 
     const ROTATION_SPEED: f32 = 15.0;
 
-    let mut transform = player_q.single_mut();
+    let mut transform = actor_q.single_mut();
     transform.rotation = Quat::slerp(
         transform.rotation,
         Quat::from_look(input.x0z(), Vec3::Y),
