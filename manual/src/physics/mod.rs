@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    time::{FixedTimestep, FixedTimesteps},
-};
+use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
 use bevy_extensions::Vec3SwizzlesExt;
 
@@ -42,7 +39,7 @@ struct MyPhysicsLabel;
 //     Write,
 // }
 
-const PHYSICS_TIMESTEP_LABEL: &str = "physics_timestep";
+// const PHYSICS_TIMESTEP_LABEL: &str = "physics_timestep";
 
 pub trait PhysicsAppExt {
     fn add_physics_system<Params>(
@@ -80,30 +77,32 @@ pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_stage_after(
-            CoreStage::Update,
-            MyPhysicsStage,
-            SystemStage::parallel()
-                .with_run_criteria(
-                    FixedTimestep::step(1.0 / 33.0).with_label(PHYSICS_TIMESTEP_LABEL),
-                )
-                .with_system_set(
-                    SystemSet::new()
-                        .label(MyPhysicsLabel)
-                        .with_system(apply_velocity),
-                ),
-        )
-        .add_system_set_to_stage(
-            CoreStage::PreUpdate,
-            SystemSet::new()
-                .with_system(setup_physics)
-                .with_system(setup_interpolation),
-        )
-        .add_system(interpolate)
-        .add_system_set_to_stage(
-            CoreStage::PostUpdate,
-            SystemSet::new().with_system(update_interpolation),
-        );
+        app.insert_resource(PhysicsTick::default())
+            .add_stage_after(
+                CoreStage::Update,
+                MyPhysicsStage,
+                SystemStage::parallel()
+                    .with_run_criteria(
+                        tick_run_criteria,
+                        // FixedTimestep::step(1.0 / 33.0).with_label(PHYSICS_TIMESTEP_LABEL),
+                    )
+                    .with_system_set(
+                        SystemSet::new()
+                            .label(MyPhysicsLabel)
+                            .with_system(apply_velocity),
+                    ),
+            )
+            .add_system_set_to_stage(
+                CoreStage::PreUpdate,
+                SystemSet::new()
+                    .with_system(setup_physics)
+                    .with_system(setup_interpolation),
+            )
+            .add_system(interpolate)
+            .add_system_set_to_stage(
+                CoreStage::PostUpdate,
+                SystemSet::new().with_system(update_interpolation),
+            );
 
         // .add_stage_after(
         //     CoreStage::Update,
@@ -161,6 +160,43 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
+const PHYSICS_TICK_RATE: f32 = 1.0 / 33.0;
+
+#[derive(Resource, Default)]
+pub struct PhysicsTick {
+    accumulator: f32,
+    looping: bool,
+}
+
+impl PhysicsTick {
+    pub const fn _rate(&self) -> f32 {
+        PHYSICS_TICK_RATE
+    }
+
+    pub fn percent(&self) -> f32 {
+        self.accumulator / PHYSICS_TICK_RATE
+    }
+
+    fn update(&mut self, time: &Time) -> ShouldRun {
+        if !self.looping {
+            self.accumulator += time.delta_seconds();
+        }
+
+        if self.accumulator >= PHYSICS_TICK_RATE {
+            self.accumulator -= PHYSICS_TICK_RATE;
+            self.looping = true;
+            ShouldRun::YesAndCheckAgain
+        } else {
+            self.looping = false;
+            ShouldRun::No
+        }
+    }
+}
+
+fn tick_run_criteria(mut tick: ResMut<PhysicsTick>, time: Res<Time>) -> ShouldRun {
+    tick.update(&time)
+}
+
 #[derive(Bundle, Default)]
 pub struct PhysicsBundle {
     velocity: Velocity,
@@ -209,12 +245,11 @@ fn apply_velocity(
         &Friction,
         &Gravity,
     )>,
-    fixed_timesteps: Res<FixedTimesteps>,
 ) {
     if let Ok((mut velocity, mut position, acceleration, friction, gravity)) =
         velocity_q.get_single_mut()
     {
-        let dt = fixed_timesteps.get(PHYSICS_TIMESTEP_LABEL).unwrap().step() as f32;
+        let dt = PHYSICS_TICK_RATE;
 
         let mut v = velocity.current;
         v += velocity.added;
@@ -259,14 +294,10 @@ fn setup_interpolation(
 
 fn interpolate(
     mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>,
-    fixed_timesteps: Res<FixedTimesteps>,
+    tick: Res<PhysicsTick>,
 ) {
-    let t = fixed_timesteps
-        .get(PHYSICS_TIMESTEP_LABEL)
-        .unwrap()
-        .overstep_percentage() as f32;
     for (mut transform, interpolate, lerp) in lerp_q.iter_mut() {
-        transform.translation = Vec3::lerp(lerp.0, lerp.1, t);
+        transform.translation = Vec3::lerp(lerp.0, lerp.1, tick.percent());
     }
 }
 
