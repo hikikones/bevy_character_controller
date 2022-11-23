@@ -2,44 +2,11 @@ use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
 use bevy_extensions::Vec3SwizzlesExt;
 
-// mod interpolation;
-// mod tick;
-
-// pub use interpolation::*;
-// pub use tick::*;
-
-// #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-// pub enum PhysicsStage {
-//     PreUpdate,
-//     Update,
-//     PostUpdate,
-//     Last,
-// }
-
-// #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-// pub enum PhysicsLabel {
-//     PreUpdate,
-//     Update,
-//     PostUpdate,
-//     Last,
-// }
-
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-struct MyPhysicsStage;
+struct PhysicsStage;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-struct MyPhysicsLabel;
-
-// #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-// struct PhysicsSchedule;
-
-// #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-// enum MyPhysicsStage {
-//     Update,
-//     Write,
-// }
-
-// const PHYSICS_TIMESTEP_LABEL: &str = "physics_timestep";
+struct PhysicsLabel;
 
 pub trait PhysicsAppExt {
     fn add_physics_system<Params>(
@@ -55,21 +22,11 @@ impl PhysicsAppExt for App {
         &mut self,
         system: impl IntoSystemDescriptor<Params>,
     ) -> &mut Self {
-        // self.schedule
-        //     .stage(PhysicsSchedule, |schedule: &mut Schedule| {
-        //         schedule.add_system_to_stage(MyPhysicsStage::Update, system)
-        //     });
-        // self
-        self.add_system_to_stage(MyPhysicsStage, system.before(MyPhysicsLabel))
+        self.add_system_to_stage(PhysicsStage, system.before(PhysicsLabel))
     }
 
     fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self {
-        // self.schedule
-        //     .stage(PhysicsSchedule, |schedule: &mut Schedule| {
-        //         schedule.add_system_set_to_stage(MyPhysicsStage::Update, system_set)
-        //     });
-        // self
-        self.add_system_set_to_stage(MyPhysicsStage, system_set.before(MyPhysicsLabel))
+        self.add_system_set_to_stage(PhysicsStage, system_set.before(PhysicsLabel))
     }
 }
 
@@ -80,16 +37,14 @@ impl Plugin for PhysicsPlugin {
         app.insert_resource(PhysicsTick::default())
             .add_stage_after(
                 CoreStage::Update,
-                MyPhysicsStage,
+                PhysicsStage,
                 SystemStage::parallel()
-                    .with_run_criteria(
-                        tick_run_criteria,
-                        // FixedTimestep::step(1.0 / 33.0).with_label(PHYSICS_TIMESTEP_LABEL),
-                    )
+                    .with_run_criteria(tick_run_criteria)
                     .with_system_set(
                         SystemSet::new()
-                            .label(MyPhysicsLabel)
-                            .with_system(apply_velocity),
+                            .label(PhysicsLabel)
+                            .with_system(apply_velocity)
+                            .with_system(write_transform.after(apply_velocity)),
                     ),
             )
             .add_system_set_to_stage(
@@ -103,60 +58,6 @@ impl Plugin for PhysicsPlugin {
                 CoreStage::PostUpdate,
                 SystemSet::new().with_system(update_interpolation),
             );
-
-        // .add_stage_after(
-        //     CoreStage::Update,
-        //     PhysicsSchedule,
-        //     Schedule::default()
-        //         .with_run_criteria(FixedTimestep::step(1.0 / 33.0))
-        //         .with_stage(
-        //             MyPhysicsStage::Update,
-        //             SystemStage::parallel().with_system(setup_interpolation),
-        //         )
-        //         .with_stage(
-        //             MyPhysicsStage::Write,
-        //             SystemStage::parallel().with_system_set(
-        //                 SystemSet::new()
-        //                     .with_system(apply_velocity)
-        //                     .with_system(update_transforms.after(apply_velocity)),
-        //             ),
-        //         ),
-        // );
-        // .add_system(lerp);
-        // app.add_stage_before(
-        //     CoreStage::PreUpdate,
-        //     PhysicsStage::PreUpdate,
-        //     SystemStage::parallel()
-        //         .with_run_criteria(tick_run_criteria)
-        //         .with_system_set(SystemSet::new().label(PhysicsLabel::PreUpdate)),
-        // )
-        // .add_stage_before(
-        //     CoreStage::Update,
-        //     PhysicsStage::Update,
-        //     SystemStage::parallel()
-        //         .with_run_criteria(tick_run_criteria)
-        //         .with_system_set(SystemSet::new().label(PhysicsLabel::Update)),
-        // )
-        // .add_stage_before(
-        //     CoreStage::PostUpdate,
-        //     PhysicsStage::PostUpdate,
-        //     SystemStage::parallel()
-        //         .with_run_criteria(tick_run_criteria)
-        //         .with_system_set(
-        //             SystemSet::new()
-        //                 .label(PhysicsLabel::PostUpdate)
-        //                 .with_system(apply_velocity),
-        //         ),
-        // )
-        // .add_stage_before(
-        //     CoreStage::Last,
-        //     PhysicsStage::Last,
-        //     SystemStage::parallel()
-        //         .with_run_criteria(tick_run_criteria)
-        //         .with_system_set(SystemSet::new().label(PhysicsLabel::Last)),
-        // )
-        // .add_plugin(TickPlugin)
-        // .add_plugin(InterpolationPlugin);
     }
 }
 
@@ -270,6 +171,12 @@ fn apply_velocity(
     }
 }
 
+fn write_transform(mut write_transform_q: Query<(&mut Transform, &Position)>) {
+    if let Ok((mut transform, position)) = write_transform_q.get_single_mut() {
+        transform.translation = position.0;
+    }
+}
+
 #[derive(Component)]
 pub struct PhysicsInterpolation(Entity);
 
@@ -292,11 +199,8 @@ fn setup_interpolation(
     }
 }
 
-fn interpolate(
-    mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>,
-    tick: Res<PhysicsTick>,
-) {
-    for (mut transform, interpolate, lerp) in lerp_q.iter_mut() {
+fn interpolate(mut lerp_q: Query<(&mut Transform, &Lerp)>, tick: Res<PhysicsTick>) {
+    for (mut transform, lerp) in lerp_q.iter_mut() {
         transform.translation = Vec3::lerp(lerp.0, lerp.1, tick.percent());
     }
 }
