@@ -10,26 +10,26 @@ impl Plugin for TickPlugin {
     }
 }
 
-pub(super) const PHYSICS_STEP: f32 = 1.0 / 20.0;
+pub(super) const PHYSICS_STEP: f64 = 1.0 / 20.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick {
-    accumulator: f32,
+    accumulator: f64,
     looping: bool,
 }
 
 impl PhysicsTick {
     pub const fn rate(&self) -> f32 {
-        PHYSICS_STEP
+        PHYSICS_STEP as f32
     }
 
     pub fn percent(&self) -> f32 {
-        self.accumulator / PHYSICS_STEP
+        (self.accumulator / PHYSICS_STEP) as f32
     }
 
     fn update(&mut self, time: &Time) -> ShouldRun {
         if !self.looping {
-            self.accumulator += time.delta_seconds();
+            self.accumulator += time.delta_seconds_f64();
         }
 
         if self.accumulator >= PHYSICS_STEP {
