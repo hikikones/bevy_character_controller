@@ -44,24 +44,18 @@ impl Plugin for PhysicsPlugin {
                         SystemSet::new()
                             .label(PhysicsLabel)
                             .with_system(apply_velocity)
-                            .with_system(write_transform.after(apply_velocity)),
+                            .with_system(update_interpolation.after(apply_velocity)),
                     ),
             )
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
-                SystemSet::new()
-                    .with_system(setup_physics)
-                    .with_system(setup_interpolation),
+                SystemSet::new().with_system(setup_interpolation),
             )
-            .add_system(interpolate)
-            .add_system_set_to_stage(
-                CoreStage::PostUpdate,
-                SystemSet::new().with_system(update_interpolation),
-            );
+            .add_system(interpolate);
     }
 }
 
-const PHYSICS_TICK_RATE: f32 = 1.0 / 20.0;
+const PHYSICS_TICK_RATE: f32 = 1.0 / 10.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick {
@@ -91,8 +85,13 @@ impl PhysicsTick {
 
         if self.accumulator >= PHYSICS_TICK_RATE {
             self.accumulator -= PHYSICS_TICK_RATE;
-            self.looping = true;
-            ShouldRun::YesAndCheckAgain
+            if self.accumulator >= PHYSICS_TICK_RATE {
+                self.looping = true;
+                ShouldRun::YesAndCheckAgain
+            } else {
+                self.looping = false;
+                ShouldRun::Yes
+            }
         } else {
             self.looping = false;
             ShouldRun::No
@@ -110,8 +109,6 @@ pub struct PhysicsBundle {
     acceleration: Acceleration,
     friction: Friction,
     gravity: Gravity,
-    position: Position,
-    marker: PhysicsMarker,
 }
 
 #[derive(Component, Default)]
@@ -136,28 +133,16 @@ pub struct Friction(pub f32);
 #[derive(Component, Default)]
 pub struct Gravity(pub f32);
 
-#[derive(Component, Default)]
-struct Position(Vec3);
-
-#[derive(Component, Default)]
-struct PhysicsMarker;
-
-fn setup_physics(mut physics_added_q: Query<(&mut Position, &Transform), Added<PhysicsMarker>>) {
-    for (mut position, transform) in physics_added_q.iter_mut() {
-        position.0 = transform.translation;
-    }
-}
-
 fn apply_velocity(
     mut velocity_q: Query<(
         &mut Velocity,
-        &mut Position,
+        &mut Transform,
         &Acceleration,
         &Friction,
         &Gravity,
     )>,
 ) {
-    if let Ok((mut velocity, mut position, acceleration, friction, gravity)) =
+    if let Ok((mut velocity, mut transform, acceleration, friction, gravity)) =
         velocity_q.get_single_mut()
     {
         let dt = PHYSICS_TICK_RATE;
@@ -167,12 +152,12 @@ fn apply_velocity(
         v += velocity.target * acceleration.0;
         v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
 
-        position.0 += v * dt;
+        transform.translation += v * dt;
 
         v.y -= gravity.0 * dt;
 
-        if position.0.y < 0.0 {
-            position.0.y = 0.0;
+        if transform.translation.y < 0.0 {
+            transform.translation.y = 0.0;
             v.y = 0.0;
         }
 
@@ -181,49 +166,53 @@ fn apply_velocity(
     }
 }
 
-fn write_transform(mut write_transform_q: Query<(&mut Transform, &Position)>) {
-    if let Ok((mut transform, position)) = write_transform_q.get_single_mut() {
-        transform.translation = position.0;
-    }
+#[derive(Component)]
+pub struct PhysicsInterpolation {
+    pub target: Entity,
+    pub translate: bool,
+    pub rotate: bool,
 }
 
 #[derive(Component)]
-pub struct PhysicsInterpolation(Entity);
-
-impl PhysicsInterpolation {
-    pub fn new(target: Entity) -> Self {
-        Self(target)
-    }
-}
-
-#[derive(Component, Debug)]
-struct Lerp(Vec3, Vec3);
+struct Lerp(Transform, Transform);
 
 fn setup_interpolation(
     lerp_added_q: Query<(Entity, &Transform), Added<PhysicsInterpolation>>,
     mut commands: Commands,
 ) {
     for (entity, transform) in lerp_added_q.iter() {
-        let pos = transform.translation;
-        commands.entity(entity).insert(Lerp(pos, pos));
+        commands.entity(entity).insert(Lerp(*transform, *transform));
     }
 }
 
-fn interpolate(mut lerp_q: Query<(&mut Transform, &Lerp)>, tick: Res<PhysicsTick>) {
-    for (mut transform, lerp) in lerp_q.iter_mut() {
-        transform.translation = Vec3::lerp(lerp.0, lerp.1, tick.percent());
+fn interpolate(
+    mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>,
+    tick: Res<PhysicsTick>,
+) {
+    for (mut transform, interpolate, lerp) in lerp_q.iter_mut() {
+        if interpolate.translate {
+            transform.translation =
+                Vec3::lerp(lerp.0.translation, lerp.1.translation, tick.percent());
+        }
+
+        if interpolate.rotate {
+            transform.rotation = Quat::slerp(lerp.0.rotation, lerp.1.rotation, tick.percent());
+        }
     }
 }
 
 fn update_interpolation(
     mut lerp_q: Query<(&mut Lerp, &PhysicsInterpolation)>,
-    position_changed_q: Query<&Position, Changed<Position>>,
+    transform_q: Query<&Transform>,
+    tick: Res<PhysicsTick>,
 ) {
+    if tick.looping {
+        return;
+    }
+
     for (mut lerp, interpolate) in lerp_q.iter_mut() {
-        if let Ok(pos) = position_changed_q.get(interpolate.0) {
-            println!("UPDATE LERP");
-            lerp.0 = lerp.1;
-            lerp.1 = pos.0;
-        }
+        println!("UPDATE LERP");
+        lerp.0 = lerp.1;
+        lerp.1 = *transform_q.get(interpolate.target).unwrap();
     }
 }
