@@ -61,7 +61,7 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
-const PHYSICS_TICK_RATE: f32 = 1.0 / 4.0;
+const PHYSICS_TICK_RATE: f32 = 1.0 / 20.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick {
@@ -79,10 +79,15 @@ impl PhysicsTick {
     }
 
     fn update(&mut self, time: &Time) -> ShouldRun {
-        // dbg!(self.percent());
         if !self.looping {
             self.accumulator += time.delta_seconds();
         }
+
+        println!(
+            "Percent: {} \t Delta: {}",
+            self.percent(),
+            time.delta_seconds()
+        );
 
         if self.accumulator >= PHYSICS_TICK_RATE {
             self.accumulator -= PHYSICS_TICK_RATE;
@@ -191,7 +196,7 @@ impl PhysicsInterpolation {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 struct Lerp(Vec3, Vec3);
 
 fn setup_interpolation(
@@ -205,10 +210,7 @@ fn setup_interpolation(
 }
 
 fn interpolate(mut lerp_q: Query<(&mut Transform, &Lerp)>, tick: Res<PhysicsTick>) {
-    // dbg!(tick.percent());
     for (mut transform, lerp) in lerp_q.iter_mut() {
-        // dbg!(lerp.0);
-        // dbg!(lerp.1);
         transform.translation = Vec3::lerp(lerp.0, lerp.1, tick.percent());
     }
 }
@@ -219,6 +221,7 @@ fn update_interpolation(
 ) {
     for (mut lerp, interpolate) in lerp_q.iter_mut() {
         if let Ok(pos) = position_changed_q.get(interpolate.0) {
+            println!("UPDATE LERP");
             lerp.0 = lerp.1;
             lerp.1 = pos.0;
         }
