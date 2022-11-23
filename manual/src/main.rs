@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy_bootstrap::{
     ActorConfig, CameraFollowExt, MaterialName, MeshName, MyAssets, SpawnActorExt,
 };
-use physics::PhysicsInterpolation;
 
 mod board;
 mod physics;
@@ -54,11 +53,13 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
 
     // Actor
     let actor = commands.spawn_actor(ActorConfig::default());
-    commands.entity(actor).insert(PhysicsInterpolation {
-        target: player,
-        translate: true,
-        rotate: false,
-    });
+    commands
+        .entity(actor)
+        .insert(physics::PhysicsInterpolation {
+            target: player,
+            translate: true,
+            rotate: false,
+        });
 
     // Camera follow
     commands.camera_follow(actor);

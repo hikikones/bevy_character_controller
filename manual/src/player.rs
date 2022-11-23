@@ -20,19 +20,6 @@ impl Plugin for PlayerPlugin {
                 .with_system(movement.after(on_ground_change))
                 .with_system(apply_physics_scalars.after(on_ground_change)),
         );
-        // .add_system_set_to_stage(
-        //     PhysicsStage::PreUpdate,
-        //     SystemSet::new()
-        //         .with_system(set_ground_state)
-        //         .with_system(on_ground_change.after(set_ground_state)),
-        // )
-        // .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
-        // .add_system_set_to_stage(
-        //     PhysicsStage::PostUpdate,
-        //     SystemSet::new()
-        //         .before(PhysicsLabel::PostUpdate)
-        //         .with_system(apply_physics_scalars),
-        // );
     }
 }
 

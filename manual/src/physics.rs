@@ -2,34 +2,6 @@ use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
 use bevy_extensions::Vec3SwizzlesExt;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-struct PhysicsStage;
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-struct PhysicsLabel;
-
-pub trait PhysicsAppExt {
-    fn add_physics_system<Params>(
-        &mut self,
-        system: impl IntoSystemDescriptor<Params>,
-    ) -> &mut Self;
-
-    fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self;
-}
-
-impl PhysicsAppExt for App {
-    fn add_physics_system<Params>(
-        &mut self,
-        system: impl IntoSystemDescriptor<Params>,
-    ) -> &mut Self {
-        self.add_system_to_stage(PhysicsStage, system.before(PhysicsLabel))
-    }
-
-    fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self {
-        self.add_system_set_to_stage(PhysicsStage, system_set.before(PhysicsLabel))
-    }
-}
-
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
@@ -55,7 +27,35 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
-const PHYSICS_TICK_RATE: f32 = 1.0 / 10.0;
+pub trait PhysicsAppExt {
+    fn add_physics_system<Params>(
+        &mut self,
+        system: impl IntoSystemDescriptor<Params>,
+    ) -> &mut Self;
+
+    fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self;
+}
+
+impl PhysicsAppExt for App {
+    fn add_physics_system<Params>(
+        &mut self,
+        system: impl IntoSystemDescriptor<Params>,
+    ) -> &mut Self {
+        self.add_system_to_stage(PhysicsStage, system.before(PhysicsLabel))
+    }
+
+    fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self {
+        self.add_system_set_to_stage(PhysicsStage, system_set.before(PhysicsLabel))
+    }
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+struct PhysicsStage;
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+struct PhysicsLabel;
+
+const PHYSICS_TICK_RATE: f32 = 1.0 / 20.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick {
@@ -76,12 +76,6 @@ impl PhysicsTick {
         if !self.looping {
             self.accumulator += time.delta_seconds();
         }
-
-        println!(
-            "Percent: {} \t Delta: {}",
-            self.percent(),
-            time.delta_seconds()
-        );
 
         if self.accumulator >= PHYSICS_TICK_RATE {
             self.accumulator -= PHYSICS_TICK_RATE;
@@ -211,7 +205,6 @@ fn update_interpolation(
     }
 
     for (mut lerp, interpolate) in lerp_q.iter_mut() {
-        println!("UPDATE LERP");
         lerp.0 = lerp.1;
         lerp.1 = *transform_q.get(interpolate.target).unwrap();
     }
