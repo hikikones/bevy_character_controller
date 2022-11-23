@@ -61,7 +61,7 @@ impl Plugin for PhysicsPlugin {
     }
 }
 
-const PHYSICS_TICK_RATE: f32 = 1.0 / 33.0;
+const PHYSICS_TICK_RATE: f32 = 1.0 / 4.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick {
@@ -79,6 +79,7 @@ impl PhysicsTick {
     }
 
     fn update(&mut self, time: &Time) -> ShouldRun {
+        // dbg!(self.percent());
         if !self.looping {
             self.accumulator += time.delta_seconds();
         }
@@ -105,6 +106,7 @@ pub struct PhysicsBundle {
     friction: Friction,
     gravity: Gravity,
     position: Position,
+    marker: PhysicsMarker,
 }
 
 #[derive(Component, Default)]
@@ -132,7 +134,10 @@ pub struct Gravity(pub f32);
 #[derive(Component, Default)]
 struct Position(Vec3);
 
-fn setup_physics(mut physics_added_q: Query<(&mut Position, &Transform)>) {
+#[derive(Component, Default)]
+struct PhysicsMarker;
+
+fn setup_physics(mut physics_added_q: Query<(&mut Position, &Transform), Added<PhysicsMarker>>) {
     for (mut position, transform) in physics_added_q.iter_mut() {
         position.0 = transform.translation;
     }
@@ -200,7 +205,10 @@ fn setup_interpolation(
 }
 
 fn interpolate(mut lerp_q: Query<(&mut Transform, &Lerp)>, tick: Res<PhysicsTick>) {
+    // dbg!(tick.percent());
     for (mut transform, lerp) in lerp_q.iter_mut() {
+        // dbg!(lerp.0);
+        // dbg!(lerp.1);
         transform.translation = Vec3::lerp(lerp.0, lerp.1, tick.percent());
     }
 }

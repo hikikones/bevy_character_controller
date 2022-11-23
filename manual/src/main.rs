@@ -64,5 +64,5 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
         .insert(PhysicsInterpolation::new(player));
 
     // Camera follow
-    commands.camera_follow(actor);
+    // commands.camera_follow(actor);
 }
