@@ -2,6 +2,12 @@ use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
 use bevy_extensions::Vec3SwizzlesExt;
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+struct PhysicsStage;
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
+struct PhysicsLabel;
+
 pub struct PhysicsPlugin;
 
 impl Plugin for PhysicsPlugin {
@@ -49,13 +55,7 @@ impl PhysicsAppExt for App {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-struct PhysicsStage;
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-struct PhysicsLabel;
-
-const PHYSICS_TICK_RATE: f32 = 1.0 / 20.0;
+const PHYSICS_STEP: f32 = 1.0 / 20.0;
 
 #[derive(Resource, Default)]
 pub struct PhysicsTick {
@@ -65,11 +65,11 @@ pub struct PhysicsTick {
 
 impl PhysicsTick {
     pub const fn _rate(&self) -> f32 {
-        PHYSICS_TICK_RATE
+        PHYSICS_STEP
     }
 
     pub fn percent(&self) -> f32 {
-        self.accumulator / PHYSICS_TICK_RATE
+        self.accumulator / PHYSICS_STEP
     }
 
     fn update(&mut self, time: &Time) -> ShouldRun {
@@ -77,9 +77,9 @@ impl PhysicsTick {
             self.accumulator += time.delta_seconds();
         }
 
-        if self.accumulator >= PHYSICS_TICK_RATE {
-            self.accumulator -= PHYSICS_TICK_RATE;
-            if self.accumulator >= PHYSICS_TICK_RATE {
+        if self.accumulator >= PHYSICS_STEP {
+            self.accumulator -= PHYSICS_STEP;
+            if self.accumulator >= PHYSICS_STEP {
                 self.looping = true;
                 ShouldRun::YesAndCheckAgain
             } else {
@@ -139,7 +139,7 @@ fn apply_velocity(
     if let Ok((mut velocity, mut transform, acceleration, friction, gravity)) =
         velocity_q.get_single_mut()
     {
-        let dt = PHYSICS_TICK_RATE;
+        let dt = PHYSICS_STEP;
 
         let mut v = velocity.current;
         v += velocity.added;

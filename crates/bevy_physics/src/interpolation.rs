@@ -6,9 +6,12 @@ pub(super) struct InterpolationPlugin;
 
 impl Plugin for InterpolationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(PhysicsStage::PreUpdate, setup_interpolation)
-            .add_system_to_stage(CoreStage::Update, lerp)
-            .add_system_to_stage(PhysicsStage::Last, update_transforms);
+        app.add_system_to_stage(CoreStage::PreUpdate, setup_interpolation)
+            .add_system_to_stage(CoreStage::Update, interpolate)
+            .add_system_to_stage(
+                PhysicsStage,
+                update_interpolation.after(PhysicsLabel::Writeback),
+            );
     }
 }
 
@@ -31,7 +34,10 @@ fn setup_interpolation(
     }
 }
 
-fn lerp(mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>, tick: Res<PhysicsTick>) {
+fn interpolate(
+    mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>,
+    tick: Res<PhysicsTick>,
+) {
     for (mut transform, interpolate, lerp) in lerp_q.iter_mut() {
         if interpolate.translate {
             transform.translation =
@@ -44,12 +50,17 @@ fn lerp(mut lerp_q: Query<(&mut Transform, &PhysicsInterpolation, &Lerp)>, tick:
     }
 }
 
-fn update_transforms(
+fn update_interpolation(
     mut lerp_q: Query<(&mut Lerp, &PhysicsInterpolation)>,
-    target_q: Query<&Transform>,
+    transform_q: Query<&Transform>,
+    tick: Res<PhysicsTick>,
 ) {
+    if tick.is_looping() {
+        return;
+    }
+
     for (mut lerp, interpolate) in lerp_q.iter_mut() {
         lerp.0 = lerp.1;
-        lerp.1 = *target_q.get(interpolate.target).unwrap();
+        lerp.1 = *transform_q.get(interpolate.target).unwrap();
     }
 }

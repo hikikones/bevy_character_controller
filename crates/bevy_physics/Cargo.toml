@@ -5,9 +5,5 @@ edition.workspace = true
 
 [dependencies]
 bevy = { workspace = true }
-bevy_rapier3d = { version = "0.19", features = [
-    "parallel",
-    "enhanced-determinism",
-    "debug-render",
-] }
+bevy_rapier3d = "0.19"
 bitflags = { workspace = true }

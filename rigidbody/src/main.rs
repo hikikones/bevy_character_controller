@@ -16,12 +16,11 @@ fn main() {
             CoreStage::Update,
             SystemSet::new().with_system(rotation).with_system(jump),
         )
-        .add_system_set_to_stage(PhysicsStage::Update, SystemSet::new().with_system(movement))
-        .add_system_set_to_stage(
-            PhysicsStage::PreUpdate,
+        .add_physics_system_set(
             SystemSet::new()
                 .with_system(set_ground_state)
-                .with_system(on_ground_change.after(set_ground_state)),
+                .with_system(on_ground_change.after(set_ground_state))
+                .with_system(movement.after(on_ground_change)),
         )
         .run();
 }
@@ -106,60 +105,6 @@ fn setup(mut commands: Commands) {
     commands.camera_follow(actor);
 }
 
-fn movement(
-    mut player_q: Query<(&mut Velocity, &SpeedScale, &AccelerationScale, &DragScale), With<Player>>,
-    input: Res<InputMovement>,
-    tick: Res<PhysicsTick>,
-) {
-    let (mut velocity, speed_scale, acceleration_scale, drag_scale) = player_q.single_mut();
-
-    if input.is_zero() {
-        let drag_scalar = 1.0 - BASE_RESISTANCE * drag_scale.0;
-        let drag_velocity = velocity.linvel * drag_scalar;
-        velocity.linvel = drag_velocity.x_z(velocity.linvel.y);
-        return;
-    }
-
-    let direction = input.x0z();
-    let current_velocity = velocity.linvel.x0z();
-    let target_velocity = direction * BASE_SPEED * speed_scale.0;
-    let max_delta = BASE_ACCELERATION * acceleration_scale.0 * tick.rate();
-
-    velocity.linvel = current_velocity
-        .move_towards(target_velocity, max_delta)
-        .x_z(velocity.linvel.y);
-}
-
-fn rotation(
-    mut player_q: Query<&mut Transform, With<Actor>>,
-    input: Res<InputMovement>,
-    time: Res<Time>,
-) {
-    if input.is_zero() {
-        return;
-    }
-
-    const ROTATION_SPEED: f32 = 15.0;
-
-    let mut transform = player_q.single_mut();
-    transform.rotation = Quat::slerp(
-        transform.rotation,
-        Quat::from_look(input.x0z(), Vec3::Y),
-        ROTATION_SPEED * time.delta_seconds(),
-    );
-}
-
-fn jump(
-    mut player_q: Query<(&mut ExternalImpulse, &GravityScale, &JumpHeightScale), With<Player>>,
-    input_action: Res<InputAction>,
-) {
-    if let InputAction::Jump = *input_action {
-        let (mut impulse, gravity_scale, jump_height_scale) = player_q.single_mut();
-        impulse.impulse = Vec3::Y
-            * f32::sqrt(2.0 * 9.81 * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0);
-    }
-}
-
 fn set_ground_state(
     mut player_q: Query<(Entity, &mut GroundState, &Transform), With<Player>>,
     block_q: Query<&Block>,
@@ -227,5 +172,59 @@ fn on_ground_change(
                 gravity_scale.0 = 2.0;
             }
         }
+    }
+}
+
+fn movement(
+    mut player_q: Query<(&mut Velocity, &SpeedScale, &AccelerationScale, &DragScale), With<Player>>,
+    input: Res<InputMovement>,
+    tick: Res<PhysicsTick>,
+) {
+    let (mut velocity, speed_scale, acceleration_scale, drag_scale) = player_q.single_mut();
+
+    if input.is_zero() {
+        let drag_scalar = 1.0 - BASE_RESISTANCE * drag_scale.0;
+        let drag_velocity = velocity.linvel * drag_scalar;
+        velocity.linvel = drag_velocity.x_z(velocity.linvel.y);
+        return;
+    }
+
+    let direction = input.x0z();
+    let current_velocity = velocity.linvel.x0z();
+    let target_velocity = direction * BASE_SPEED * speed_scale.0;
+    let max_delta = BASE_ACCELERATION * acceleration_scale.0 * tick.rate();
+
+    velocity.linvel = current_velocity
+        .move_towards(target_velocity, max_delta)
+        .x_z(velocity.linvel.y);
+}
+
+fn rotation(
+    mut player_q: Query<&mut Transform, With<Actor>>,
+    input: Res<InputMovement>,
+    time: Res<Time>,
+) {
+    if input.is_zero() {
+        return;
+    }
+
+    const ROTATION_SPEED: f32 = 15.0;
+
+    let mut transform = player_q.single_mut();
+    transform.rotation = Quat::slerp(
+        transform.rotation,
+        Quat::from_look(input.x0z(), Vec3::Y),
+        ROTATION_SPEED * time.delta_seconds(),
+    );
+}
+
+fn jump(
+    mut player_q: Query<(&mut ExternalImpulse, &GravityScale, &JumpHeightScale), With<Player>>,
+    input_action: Res<InputAction>,
+) {
+    if let InputAction::Jump = *input_action {
+        let (mut impulse, gravity_scale, jump_height_scale) = player_q.single_mut();
+        impulse.impulse.y +=
+            f32::sqrt(2.0 * 9.81 * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0);
     }
 }

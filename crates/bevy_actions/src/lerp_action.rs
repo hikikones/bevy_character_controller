@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_physics::{PhysicsStage, PhysicsTick};
+use bevy_physics::{PhysicsAppExt, PhysicsTick};
 use bevy_sequential_actions::*;
 
 use super::IntoValue;
@@ -8,7 +8,7 @@ pub(super) struct LerpActionPlugin;
 
 impl Plugin for LerpActionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(PhysicsStage::Update, lerp);
+        app.add_physics_system(lerp);
     }
 }
 

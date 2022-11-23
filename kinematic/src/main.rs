@@ -12,8 +12,7 @@ fn main() {
         .add_plugin(ActionsPlugin)
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
-        .add_system_set_to_stage(
-            PhysicsStage::Update,
+        .add_physics_system_set(
             SystemSet::new().with_system(movement),
             // .with_system(rotation)
             // .with_system(jump),
