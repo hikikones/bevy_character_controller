@@ -57,7 +57,7 @@ fn setup(mut commands: Commands, assets: Res<MyAssets>) {
     commands.entity(actor).insert(PhysicsInterpolation {
         target: player,
         translate: true,
-        rotate: true,
+        rotate: false,
     });
 
     // Camera follow
