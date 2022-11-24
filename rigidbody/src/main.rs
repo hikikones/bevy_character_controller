@@ -20,15 +20,23 @@ fn main() {
             SystemSet::new()
                 .with_system(set_ground_state)
                 .with_system(on_ground_change.after(set_ground_state))
-                .with_system(movement.after(on_ground_change)),
+                .with_system(movement.after(on_ground_change))
+                .with_system(apply_physics_scalars.after(on_ground_change)),
         )
         .run();
 }
 
-const BASE_SPEED: f32 = 10.0;
-const BASE_ACCELERATION: f32 = BASE_SPEED * 3.0;
-const BASE_RESISTANCE: f32 = 0.4;
-const BASE_JUMP_HEIGHT: f32 = 3.0;
+#[derive(Bundle)]
+struct PlayerBundle {
+    marker: Player,
+    ground_state: GroundState,
+    speed_scale: SpeedScale,
+    acceleration_scale: AccelerationScale,
+    damping_scale: DampingScale,
+    friction_scale: FrictionScale,
+    jump_height_scale: JumpHeightScale,
+    gravity_scale: GravityScale,
+}
 
 #[derive(Component)]
 struct Player;
@@ -40,27 +48,66 @@ struct SpeedScale(f32);
 struct AccelerationScale(f32);
 
 #[derive(Component)]
-struct DragScale(f32);
+struct DampingScale(f32);
+
+#[derive(Component)]
+struct FrictionScale(f32);
 
 #[derive(Component)]
 struct JumpHeightScale(f32);
 
-#[derive(Component, Debug, PartialEq, Eq)]
+#[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
 enum GroundState {
     None,
+    #[default]
     Normal,
     Slippery,
 }
 
-#[derive(Bundle)]
-struct PlayerBundle {
-    marker: Player,
-    speed_scale: SpeedScale,
-    acceleration_scale: AccelerationScale,
-    resistance_scale: DragScale,
-    jump_height_scale: JumpHeightScale,
-    gravity_scale: GravityScale,
-    ground_state: GroundState,
+struct Scalars {
+    speed: f32,
+    acceleration: f32,
+    damping: f32,
+    friction: f32,
+    gravity: f32,
+    jump_height: f32,
+}
+
+const BASE_SPEED: f32 = 10.0;
+const BASE_ACCELERATION: f32 = BASE_SPEED * 3.0;
+const BASE_DAMPING: f32 = 1.0;
+const BASE_FRICTION: f32 = 1.0;
+const BASE_JUMP_HEIGHT: f32 = 3.0;
+
+impl GroundState {
+    fn scalars(&self) -> Scalars {
+        match self {
+            GroundState::None => Scalars {
+                speed: 1.0,
+                acceleration: 0.2,
+                damping: 0.1,
+                friction: 0.0,
+                gravity: 1.1,
+                jump_height: 1.0,
+            },
+            GroundState::Normal => Scalars {
+                speed: 1.0,
+                acceleration: 1.0,
+                damping: 2.0,
+                friction: 0.5,
+                gravity: 1.0,
+                jump_height: 1.0,
+            },
+            GroundState::Slippery => Scalars {
+                speed: 1.5,
+                acceleration: 0.2,
+                damping: 0.0,
+                friction: 0.0,
+                gravity: 1.0,
+                jump_height: 1.0,
+            },
+        }
+    }
 }
 
 fn setup(mut commands: Commands) {
@@ -70,19 +117,26 @@ fn setup(mut commands: Commands) {
             TransformBundle::default(),
             PlayerBundle {
                 marker: Player,
+                ground_state: GroundState::Normal,
                 speed_scale: SpeedScale(1.0),
                 acceleration_scale: AccelerationScale(1.0),
-                resistance_scale: DragScale(1.0),
+                damping_scale: DampingScale(1.0),
+                friction_scale: FrictionScale(1.0),
                 jump_height_scale: JumpHeightScale(1.0),
                 gravity_scale: GravityScale(1.0),
-                ground_state: GroundState::Normal,
             },
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
             CollisionGroups::from(PhysicsLayer::PLAYER),
-            Friction::coefficient(0.0),
-            Restitution::coefficient(0.0),
-            // Damping::default(),
+            Friction {
+                coefficient: 0.0,
+                combine_rule: CoefficientCombineRule::Multiply,
+            },
+            Restitution {
+                coefficient: 0.0,
+                combine_rule: CoefficientCombineRule::Multiply,
+            },
+            Damping::default(),
             // ColliderMassProperties::default(),
             Velocity::default(),
             // ExternalForce::default(),
@@ -145,47 +199,47 @@ fn on_ground_change(
     mut player_q: Query<
         (
             &GroundState,
+            &mut SpeedScale,
             &mut AccelerationScale,
-            &mut DragScale,
+            &mut DampingScale,
+            &mut FrictionScale,
             &mut GravityScale,
+            &mut JumpHeightScale,
         ),
         (Changed<GroundState>, With<Player>),
     >,
 ) {
-    if let Ok((ground_state, mut acceleration_scale, mut drag_scale, mut gravity_scale)) =
-        player_q.get_single_mut()
+    if let Ok((
+        ground_state,
+        mut speed_scale,
+        mut acceleration_scale,
+        mut damping_scale,
+        mut friction_scale,
+        mut gravity_scale,
+        mut jump_height_scale,
+    )) = player_q.get_single_mut()
     {
-        match ground_state {
-            GroundState::None => {
-                acceleration_scale.0 = 0.5;
-                drag_scale.0 = 0.0;
-                gravity_scale.0 = 2.0;
-            }
-            GroundState::Normal => {
-                acceleration_scale.0 = 1.0;
-                drag_scale.0 = 1.0;
-                gravity_scale.0 = 2.0;
-            }
-            GroundState::Slippery => {
-                acceleration_scale.0 = 0.2;
-                drag_scale.0 = 0.01;
-                gravity_scale.0 = 2.0;
-            }
-        }
+        let scalars = ground_state.scalars();
+        speed_scale.0 = scalars.speed;
+        acceleration_scale.0 = scalars.acceleration;
+        damping_scale.0 = scalars.damping;
+        friction_scale.0 = scalars.friction;
+        gravity_scale.0 = scalars.gravity;
+        jump_height_scale.0 = scalars.jump_height;
     }
 }
 
 fn movement(
-    mut player_q: Query<(&mut Velocity, &SpeedScale, &AccelerationScale, &DragScale), With<Player>>,
+    mut player_q: Query<
+        (&mut Velocity, &GroundState, &SpeedScale, &AccelerationScale),
+        With<Player>,
+    >,
     input: Res<InputMovement>,
     tick: Res<PhysicsTick>,
 ) {
-    let (mut velocity, speed_scale, acceleration_scale, drag_scale) = player_q.single_mut();
+    let (mut velocity, _ground_state, speed_scale, acceleration_scale) = player_q.single_mut();
 
     if input.is_zero() {
-        let drag_scalar = 1.0 - BASE_RESISTANCE * drag_scale.0;
-        let drag_velocity = velocity.linvel * drag_scalar;
-        velocity.linvel = drag_velocity.x_z(velocity.linvel.y);
         return;
     }
 
@@ -227,4 +281,13 @@ fn jump(
         impulse.impulse.y +=
             f32::sqrt(2.0 * 9.81 * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0);
     }
+}
+
+fn apply_physics_scalars(
+    mut player_q: Query<(&mut Damping, &mut Friction, &DampingScale, &FrictionScale), With<Player>>,
+) {
+    let (mut damping, mut friction, damping_scale, friction_scale) = player_q.single_mut();
+
+    damping.linear_damping = BASE_DAMPING * damping_scale.0;
+    friction.coefficient = BASE_FRICTION * friction_scale.0;
 }

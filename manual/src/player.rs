@@ -26,48 +26,42 @@ impl Plugin for PlayerPlugin {
 #[derive(Bundle)]
 pub struct PlayerBundle {
     marker: Player,
-    state: PlayerState,
-    ground_state: GroundState,
 
     #[bundle]
     physics_bundle: PhysicsBundle,
 
     speed_scale: SpeedScale,
     acceleration_scale: AccelerationScale,
-    friction_scale: FrictionScale,
+    damping_scale: DampingScale,
     gravity_scale: GravityScale,
     jump_height_scale: JumpHeightScale,
+
+    state: PlayerState,
+    ground_state: GroundState,
 }
 
 impl Default for PlayerBundle {
     fn default() -> Self {
         Self {
             marker: Player,
+            physics_bundle: PhysicsBundle::default(),
+            speed_scale: SpeedScale(1.0),
+            acceleration_scale: AccelerationScale(1.0),
+            damping_scale: DampingScale(1.0),
+            gravity_scale: GravityScale(1.0),
+            jump_height_scale: JumpHeightScale(1.0),
             state: PlayerState {
                 input_on_ground_change: Vec3::ZERO,
                 velocity_target_on_ground_change: Vec3::ZERO,
                 previous_ground_state: GroundState::default(),
             },
             ground_state: GroundState::default(),
-            physics_bundle: PhysicsBundle::default(),
-            speed_scale: SpeedScale(1.0),
-            acceleration_scale: AccelerationScale(1.0),
-            friction_scale: FrictionScale(1.0),
-            gravity_scale: GravityScale(1.0),
-            jump_height_scale: JumpHeightScale(1.0),
         }
     }
 }
 
 #[derive(Component)]
 struct Player;
-
-#[derive(Component, Debug)]
-struct PlayerState {
-    input_on_ground_change: Vec3,
-    velocity_target_on_ground_change: Vec3,
-    previous_ground_state: GroundState,
-}
 
 #[derive(Component)]
 struct SpeedScale(f32);
@@ -76,13 +70,20 @@ struct SpeedScale(f32);
 struct AccelerationScale(f32);
 
 #[derive(Component)]
-struct FrictionScale(f32);
+struct DampingScale(f32);
 
 #[derive(Component)]
 struct GravityScale(f32);
 
 #[derive(Component)]
 struct JumpHeightScale(f32);
+
+#[derive(Component, Debug)]
+struct PlayerState {
+    input_on_ground_change: Vec3,
+    velocity_target_on_ground_change: Vec3,
+    previous_ground_state: GroundState,
+}
 
 #[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
 enum GroundState {
@@ -96,14 +97,14 @@ enum GroundState {
 struct Scalars {
     speed: f32,
     acceleration: f32,
-    friction: f32,
+    damping: f32,
     gravity: f32,
     jump_height: f32,
 }
 
 const BASE_SPEED: f32 = 3.5;
 const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
-const BASE_FRICTION: f32 = 0.4;
+const BASE_DAMPING: f32 = 0.4;
 const BASE_GRAVITY: f32 = 9.81;
 const BASE_JUMP_HEIGHT: f32 = 2.0;
 
@@ -113,28 +114,28 @@ impl GroundState {
             GroundState::None => Scalars {
                 speed: 1.0,
                 acceleration: 0.05,
-                friction: 0.1,
+                damping: 0.1,
                 gravity: 1.0,
                 jump_height: 0.0,
             },
             GroundState::Normal => Scalars {
                 speed: 1.0,
                 acceleration: 1.0,
-                friction: 1.0,
+                damping: 1.0,
                 gravity: 1.0,
                 jump_height: 1.0,
             },
             GroundState::Slippery => Scalars {
                 speed: 1.5,
                 acceleration: 0.02,
-                friction: 0.01,
+                damping: 0.01,
                 gravity: 1.0,
                 jump_height: 0.0,
             },
             GroundState::Forward => Scalars {
                 speed: 1.0,
                 acceleration: 1.0,
-                friction: 1.0,
+                damping: 1.0,
                 gravity: 1.0,
                 jump_height: 0.0,
             },
@@ -175,7 +176,7 @@ fn on_ground_change(
             &mut PlayerState,
             &mut SpeedScale,
             &mut AccelerationScale,
-            &mut FrictionScale,
+            &mut DampingScale,
             &mut GravityScale,
             &mut JumpHeightScale,
         ),
@@ -189,7 +190,7 @@ fn on_ground_change(
         mut player_state,
         mut speed_scale,
         mut acceleration_scale,
-        mut friction_scale,
+        mut damping_scale,
         mut gravity_scale,
         mut jump_height_scale,
     )) = player_q.get_single_mut()
@@ -200,7 +201,7 @@ fn on_ground_change(
         let scalars = ground_state.scalars();
         speed_scale.0 = scalars.speed;
         acceleration_scale.0 = scalars.acceleration;
-        friction_scale.0 = scalars.friction;
+        damping_scale.0 = scalars.damping;
         gravity_scale.0 = scalars.gravity;
         jump_height_scale.0 = scalars.jump_height;
     }
@@ -267,10 +268,10 @@ fn apply_physics_scalars(
     mut player_q: Query<
         (
             &mut Acceleration,
-            &mut Friction,
+            &mut Damping,
             &mut Gravity,
             &AccelerationScale,
-            &FrictionScale,
+            &DampingScale,
             &GravityScale,
         ),
         With<Player>,
@@ -278,14 +279,14 @@ fn apply_physics_scalars(
 ) {
     let (
         mut acceleration,
-        mut friction,
+        mut damping,
         mut gravity,
         acceleration_scale,
-        friction_scale,
+        damping_scale,
         gravity_scale,
     ) = player_q.single_mut();
 
     acceleration.0 = BASE_ACCELERATION * acceleration_scale.0;
-    friction.0 = BASE_FRICTION * friction_scale.0;
+    damping.0 = BASE_DAMPING * damping_scale.0;
     gravity.0 = BASE_GRAVITY * gravity_scale.0;
 }

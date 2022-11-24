@@ -38,7 +38,6 @@ impl Plugin for PhysicsPlugin {
             ..Default::default()
         })
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default().with_default_system_setup(false))
-        .add_plugin(RapierDebugRenderPlugin::default())
         .add_stage_after(
             CoreStage::Update,
             PhysicsStage,
@@ -68,6 +67,9 @@ impl Plugin for PhysicsPlugin {
         )
         .add_plugin(TickPlugin)
         .add_plugin(InterpolationPlugin);
+
+        #[cfg(debug_assertions)]
+        app.add_plugin(RapierDebugRenderPlugin::default());
     }
 }
 

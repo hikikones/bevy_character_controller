@@ -110,7 +110,7 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         Block::Cube,
                         RigidBody::KinematicPositionBased,
                         Collider::cuboid(0.5, 0.5, 0.5),
-                        Friction::coefficient(0.0),
+                        Friction::coefficient(1.0),
                         CollisionGroups::from(PhysicsLayer::BLOCK),
                         Restitution::coefficient(0.0),
                     ))

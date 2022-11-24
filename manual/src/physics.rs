@@ -106,7 +106,7 @@ fn tick_run_criteria(mut tick: ResMut<PhysicsTick>, time: Res<Time>) -> ShouldRu
 pub struct PhysicsBundle {
     velocity: Velocity,
     acceleration: Acceleration,
-    friction: Friction,
+    damping: Damping,
     gravity: Gravity,
 }
 
@@ -127,7 +127,7 @@ impl Velocity {
 pub struct Acceleration(pub f32);
 
 #[derive(Component, Default)]
-pub struct Friction(pub f32);
+pub struct Damping(pub f32);
 
 #[derive(Component, Default)]
 pub struct Gravity(pub f32);
@@ -137,12 +137,12 @@ fn apply_velocity(
         &mut Velocity,
         &mut Transform,
         &Acceleration,
-        &Friction,
+        &Damping,
         &Gravity,
     )>,
     tick: Res<PhysicsTick>,
 ) {
-    if let Ok((mut velocity, mut transform, acceleration, friction, gravity)) =
+    if let Ok((mut velocity, mut transform, acceleration, damping, gravity)) =
         velocity_q.get_single_mut()
     {
         let dt = tick.delta();
@@ -150,7 +150,7 @@ fn apply_velocity(
         let mut v = velocity.current;
         v += velocity.added;
         v += velocity.target * acceleration.0;
-        v = (v.x0z() * (1.0 - friction.0)).x_z(v.y);
+        v = (v.x0z() * (1.0 - damping.0)).x_z(v.y);
 
         transform.translation += v * dt;
 
