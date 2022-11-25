@@ -13,6 +13,7 @@ fn main() {
         .add_plugin(BootstrapPlugin)
         .add_startup_system(setup)
         .add_physics_system_set(
+            PhysicsLabel::Update,
             SystemSet::new().with_system(movement),
             // .with_system(rotation)
             // .with_system(jump),

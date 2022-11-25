@@ -10,7 +10,7 @@ impl Plugin for InterpolationPlugin {
             .add_system_to_stage(CoreStage::Update, interpolate)
             .add_system_to_stage(
                 PhysicsStage,
-                update_interpolation.after(PhysicsLabel::Writeback),
+                update_interpolation.after(RapierLabel::Writeback),
             );
     }
 }
