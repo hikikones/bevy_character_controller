@@ -149,7 +149,7 @@ fn apply_velocity(
 
         let mut v = velocity.0;
         v += impulse.0;
-        v = (v.x0z() * (1.0 - damping.0 * dt)).x_z(v.y);
+        v = (v.x0z() * (1.0 / (1.0 + damping.0 * dt))).x_z(v.y);
 
         transform.translation += v * dt;
 

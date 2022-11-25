@@ -105,7 +105,7 @@ struct Scalars {
 
 const BASE_SPEED: f32 = 15.0;
 const BASE_ACCELERATION: f32 = BASE_SPEED * 4.0;
-const BASE_DAMPING: f32 = BASE_SPEED * 0.3;
+const BASE_DAMPING: f32 = BASE_SPEED * 0.4;
 const BASE_GRAVITY: f32 = 9.81;
 const BASE_JUMP_HEIGHT: f32 = 2.0;
 
