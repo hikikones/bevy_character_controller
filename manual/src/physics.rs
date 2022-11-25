@@ -6,7 +6,11 @@ use bevy_extensions::{MoveTowardsExt, Vec3SwizzlesExt};
 struct PhysicsStage;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemLabel)]
-struct PhysicsLabel;
+pub enum PhysicsLabel {
+    PreUpdate,
+    Update,
+    PostUpdate,
+}
 
 pub struct PhysicsPlugin;
 
@@ -20,7 +24,24 @@ impl Plugin for PhysicsPlugin {
                     .with_run_criteria(tick_run_criteria)
                     .with_system_set(
                         SystemSet::new()
-                            .label(PhysicsLabel)
+                            .label(PhysicsLabel::PreUpdate)
+                            .with_system(|| {}),
+                    )
+                    .with_system_set(
+                        SystemSet::new()
+                            .label(PhysicsLabel::Update)
+                            .after(PhysicsLabel::PreUpdate)
+                            .with_system(|| {}),
+                    )
+                    .with_system_set(
+                        SystemSet::new()
+                            .label(PhysicsLabel::PostUpdate)
+                            .after(PhysicsLabel::Update)
+                            .with_system(|| {}),
+                    )
+                    .with_system_set(
+                        SystemSet::new()
+                            .after(PhysicsLabel::PostUpdate)
                             .with_system(apply_velocity)
                             .with_system(update_interpolation.after(apply_velocity)),
                     ),
@@ -36,22 +57,55 @@ impl Plugin for PhysicsPlugin {
 pub trait PhysicsAppExt {
     fn add_physics_system<Params>(
         &mut self,
+        label: PhysicsLabel,
         system: impl IntoSystemDescriptor<Params>,
     ) -> &mut Self;
 
-    fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self;
+    fn add_physics_system_set(&mut self, label: PhysicsLabel, system_set: SystemSet) -> &mut Self;
 }
 
 impl PhysicsAppExt for App {
     fn add_physics_system<Params>(
         &mut self,
+        label: PhysicsLabel,
         system: impl IntoSystemDescriptor<Params>,
     ) -> &mut Self {
-        self.add_system_to_stage(PhysicsStage, system.before(PhysicsLabel))
+        match label {
+            PhysicsLabel::PreUpdate => {
+                self.add_system_to_stage(PhysicsStage, system.before(PhysicsLabel::PreUpdate))
+            }
+            PhysicsLabel::Update => self.add_system_to_stage(
+                PhysicsStage,
+                system
+                    .before(PhysicsLabel::Update)
+                    .after(PhysicsLabel::PreUpdate),
+            ),
+            PhysicsLabel::PostUpdate => self.add_system_to_stage(
+                PhysicsStage,
+                system
+                    .before(PhysicsLabel::PostUpdate)
+                    .after(PhysicsLabel::Update),
+            ),
+        }
     }
 
-    fn add_physics_system_set(&mut self, system_set: SystemSet) -> &mut Self {
-        self.add_system_set_to_stage(PhysicsStage, system_set.before(PhysicsLabel))
+    fn add_physics_system_set(&mut self, label: PhysicsLabel, system_set: SystemSet) -> &mut Self {
+        match label {
+            PhysicsLabel::PreUpdate => self
+                .add_system_set_to_stage(PhysicsStage, system_set.before(PhysicsLabel::PreUpdate)),
+            PhysicsLabel::Update => self.add_system_set_to_stage(
+                PhysicsStage,
+                system_set
+                    .before(PhysicsLabel::Update)
+                    .after(PhysicsLabel::PreUpdate),
+            ),
+            PhysicsLabel::PostUpdate => self.add_system_set_to_stage(
+                PhysicsStage,
+                system_set
+                    .before(PhysicsLabel::PostUpdate)
+                    .after(PhysicsLabel::Update),
+            ),
+        }
     }
 }
 

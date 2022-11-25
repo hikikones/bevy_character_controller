@@ -14,11 +14,15 @@ impl Plugin for PlayerPlugin {
             SystemSet::new().with_system(rotation).with_system(jump),
         )
         .add_physics_system_set(
+            PhysicsLabel::PreUpdate,
             SystemSet::new()
                 .with_system(set_ground_state)
-                .with_system(on_ground_change.after(set_ground_state))
-                .with_system(movement.after(on_ground_change))
-                .with_system(apply_physics_scalars.after(on_ground_change)),
+                .with_system(on_ground_change.after(set_ground_state)),
+        )
+        .add_physics_system_set(PhysicsLabel::Update, SystemSet::new().with_system(movement))
+        .add_physics_system_set(
+            PhysicsLabel::PostUpdate,
+            SystemSet::new().with_system(apply_physics_scalars),
         );
     }
 }
