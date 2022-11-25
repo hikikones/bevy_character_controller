@@ -239,11 +239,11 @@ fn movement(
                 .x0z()
                 .length()
                 .max(1.0);
-            velocity.move_towards(actor_q.single().forward() * forward_speed, acceleration);
+            velocity.move_towards_xz(actor_q.single().forward() * forward_speed, acceleration);
         }
         _ => {
             if !input.is_zero() {
-                velocity.move_towards(input.x0z() * speed, acceleration);
+                velocity.move_towards_xz(input.x0z() * speed, acceleration);
             }
         }
     }
@@ -275,7 +275,7 @@ fn jump(
     if let InputAction::Jump = *input_action {
         let (mut impulse, gravity_scale, jump_height_scale) = player_q.single_mut();
 
-        impulse.0.y += f32::sqrt(
+        impulse.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
     }

@@ -106,15 +106,16 @@ fn tick_run_criteria(mut tick: ResMut<PhysicsTick>, time: Res<Time>) -> ShouldRu
 pub struct PhysicsBundle {
     velocity: Velocity,
     impulse: Impulse,
+    force: Force,
     damping: Damping,
     gravity: Gravity,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Deref, DerefMut)]
 pub struct Velocity(pub Vec3);
 
 impl Velocity {
-    pub fn move_towards(&mut self, target: Vec3, acceleration: f32) {
+    pub fn move_towards_xz(&mut self, target: Vec3, acceleration: f32) {
         self.0 = self
             .0
             .x0z()
@@ -123,8 +124,11 @@ impl Velocity {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Deref, DerefMut)]
 pub struct Impulse(pub Vec3);
+
+#[derive(Component, Default, Deref, DerefMut)]
+pub struct Force(pub Vec3);
 
 #[derive(Component, Default)]
 pub struct Damping(pub f32);
@@ -136,19 +140,21 @@ fn apply_velocity(
     mut velocity_q: Query<(
         &mut Velocity,
         &mut Impulse,
+        &mut Force,
         &mut Transform,
         &Damping,
         &Gravity,
     )>,
     tick: Res<PhysicsTick>,
 ) {
-    if let Ok((mut velocity, mut impulse, mut transform, damping, gravity)) =
+    if let Ok((mut velocity, mut impulse, mut force, mut transform, damping, gravity)) =
         velocity_q.get_single_mut()
     {
         let dt = tick.delta();
 
         let mut v = velocity.0;
         v += impulse.0;
+        v += force.0 * dt;
         v = (v.x0z() * (1.0 / (1.0 + damping.0 * dt))).x_z(v.y);
 
         transform.translation += v * dt;
@@ -162,6 +168,7 @@ fn apply_velocity(
 
         velocity.0 = v;
         impulse.0 = Vec3::ZERO;
+        force.0 = Vec3::ZERO;
     }
 }
 
