@@ -1,6 +1,6 @@
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
 
-use bevy_extensions::Vec3SwizzlesExt;
+use bevy_extensions::{MoveTowardsExt, Vec3SwizzlesExt};
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
 struct PhysicsStage;
@@ -105,26 +105,26 @@ fn tick_run_criteria(mut tick: ResMut<PhysicsTick>, time: Res<Time>) -> ShouldRu
 #[derive(Bundle, Default)]
 pub struct PhysicsBundle {
     velocity: Velocity,
-    acceleration: Acceleration,
+    impulse: Impulse,
     damping: Damping,
     gravity: Gravity,
 }
 
 #[derive(Component, Default)]
-pub struct Velocity {
-    pub target: Vec3,
-    current: Vec3,
-    added: Vec3,
-}
+pub struct Velocity(pub Vec3);
 
 impl Velocity {
-    pub fn add(&mut self, v: Vec3) {
-        self.added += v;
+    pub fn move_towards(&mut self, target: Vec3, acceleration: f32) {
+        self.0 = self
+            .0
+            .x0z()
+            .move_towards(target, acceleration)
+            .x_z(self.0.y);
     }
 }
 
 #[derive(Component, Default)]
-pub struct Acceleration(pub f32);
+pub struct Impulse(pub Vec3);
 
 #[derive(Component, Default)]
 pub struct Damping(pub f32);
@@ -135,22 +135,21 @@ pub struct Gravity(pub f32);
 fn apply_velocity(
     mut velocity_q: Query<(
         &mut Velocity,
+        &mut Impulse,
         &mut Transform,
-        &Acceleration,
         &Damping,
         &Gravity,
     )>,
     tick: Res<PhysicsTick>,
 ) {
-    if let Ok((mut velocity, mut transform, acceleration, damping, gravity)) =
+    if let Ok((mut velocity, mut impulse, mut transform, damping, gravity)) =
         velocity_q.get_single_mut()
     {
         let dt = tick.delta();
 
-        let mut v = velocity.current;
-        v += velocity.added;
-        v += velocity.target * acceleration.0;
-        v = (v.x0z() * (1.0 - damping.0)).x_z(v.y);
+        let mut v = velocity.0;
+        v += impulse.0;
+        v = (v.x0z() * (1.0 - damping.0 * dt)).x_z(v.y);
 
         transform.translation += v * dt;
 
@@ -161,8 +160,8 @@ fn apply_velocity(
             v.y = 0.0;
         }
 
-        velocity.current = v;
-        velocity.added = Vec3::ZERO;
+        velocity.0 = v;
+        impulse.0 = Vec3::ZERO;
     }
 }
 

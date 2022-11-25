@@ -34,8 +34,8 @@ struct PlayerBundle {
     acceleration_scale: AccelerationScale,
     damping_scale: DampingScale,
     friction_scale: FrictionScale,
-    jump_height_scale: JumpHeightScale,
     gravity_scale: GravityScale,
+    jump_height_scale: JumpHeightScale,
 }
 
 #[derive(Component)]
@@ -122,8 +122,8 @@ fn setup(mut commands: Commands) {
                 acceleration_scale: AccelerationScale(1.0),
                 damping_scale: DampingScale(1.0),
                 friction_scale: FrictionScale(1.0),
-                jump_height_scale: JumpHeightScale(1.0),
                 gravity_scale: GravityScale(1.0),
+                jump_height_scale: JumpHeightScale(1.0),
             },
             RigidBody::Dynamic,
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),

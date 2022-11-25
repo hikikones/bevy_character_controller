@@ -26,6 +26,8 @@ impl Plugin for PlayerPlugin {
 #[derive(Bundle)]
 pub struct PlayerBundle {
     marker: Player,
+    history: PlayerHistory,
+    ground_state: GroundState,
 
     #[bundle]
     physics_bundle: PhysicsBundle,
@@ -35,27 +37,25 @@ pub struct PlayerBundle {
     damping_scale: DampingScale,
     gravity_scale: GravityScale,
     jump_height_scale: JumpHeightScale,
-
-    state: PlayerState,
-    ground_state: GroundState,
 }
 
 impl Default for PlayerBundle {
     fn default() -> Self {
         Self {
             marker: Player,
+            history: PlayerHistory {
+                input_on_ground_change: Vec3::ZERO,
+                velocity_on_ground_change: Vec3::ZERO,
+                forward_on_ground_change: Vec3::ZERO,
+                previous_ground_state: GroundState::default(),
+            },
+            ground_state: GroundState::default(),
             physics_bundle: PhysicsBundle::default(),
             speed_scale: SpeedScale(1.0),
             acceleration_scale: AccelerationScale(1.0),
             damping_scale: DampingScale(1.0),
             gravity_scale: GravityScale(1.0),
             jump_height_scale: JumpHeightScale(1.0),
-            state: PlayerState {
-                input_on_ground_change: Vec3::ZERO,
-                velocity_target_on_ground_change: Vec3::ZERO,
-                previous_ground_state: GroundState::default(),
-            },
-            ground_state: GroundState::default(),
         }
     }
 }
@@ -79,9 +79,10 @@ struct GravityScale(f32);
 struct JumpHeightScale(f32);
 
 #[derive(Component, Debug)]
-struct PlayerState {
+struct PlayerHistory {
     input_on_ground_change: Vec3,
-    velocity_target_on_ground_change: Vec3,
+    velocity_on_ground_change: Vec3,
+    forward_on_ground_change: Vec3,
     previous_ground_state: GroundState,
 }
 
@@ -102,9 +103,9 @@ struct Scalars {
     jump_height: f32,
 }
 
-const BASE_SPEED: f32 = 3.5;
-const BASE_ACCELERATION: f32 = BASE_SPEED * 0.5;
-const BASE_DAMPING: f32 = 0.4;
+const BASE_SPEED: f32 = 15.0;
+const BASE_ACCELERATION: f32 = BASE_SPEED * 4.0;
+const BASE_DAMPING: f32 = BASE_SPEED * 0.3;
 const BASE_GRAVITY: f32 = 9.81;
 const BASE_JUMP_HEIGHT: f32 = 2.0;
 
@@ -113,8 +114,8 @@ impl GroundState {
         match self {
             GroundState::None => Scalars {
                 speed: 1.0,
-                acceleration: 0.05,
-                damping: 0.1,
+                acceleration: 0.2,
+                damping: 0.2,
                 gravity: 1.0,
                 jump_height: 0.0,
             },
@@ -127,7 +128,7 @@ impl GroundState {
             },
             GroundState::Slippery => Scalars {
                 speed: 1.5,
-                acceleration: 0.02,
+                acceleration: 0.1,
                 damping: 0.01,
                 gravity: 1.0,
                 jump_height: 0.0,
@@ -135,7 +136,7 @@ impl GroundState {
             GroundState::Forward => Scalars {
                 speed: 1.0,
                 acceleration: 1.0,
-                damping: 1.0,
+                damping: 0.0,
                 gravity: 1.0,
                 jump_height: 0.0,
             },
@@ -144,10 +145,10 @@ impl GroundState {
 }
 
 fn set_ground_state(
-    mut player_q: Query<(&mut GroundState, &mut PlayerState, &Transform), With<Player>>,
+    mut player_q: Query<(&mut GroundState, &mut PlayerHistory, &Transform), With<Player>>,
     platforms: Res<Platforms>,
 ) {
-    let (mut ground_state, mut player_state, transform) = player_q.single_mut();
+    let (mut ground_state, mut player_history, transform) = player_q.single_mut();
     let pos = transform.translation;
 
     let new_ground_state = if pos.y > 0.0 {
@@ -163,7 +164,7 @@ fn set_ground_state(
     };
 
     if *ground_state != new_ground_state {
-        player_state.previous_ground_state = *ground_state;
+        player_history.previous_ground_state = *ground_state;
         *ground_state = new_ground_state;
     }
 }
@@ -173,7 +174,7 @@ fn on_ground_change(
         (
             &GroundState,
             &Velocity,
-            &mut PlayerState,
+            &mut PlayerHistory,
             &mut SpeedScale,
             &mut AccelerationScale,
             &mut DampingScale,
@@ -182,12 +183,13 @@ fn on_ground_change(
         ),
         (Changed<GroundState>, With<Player>),
     >,
+    actor_q: Query<&Transform, With<Actor>>,
     input: Res<InputMovement>,
 ) {
     if let Ok((
         ground_state,
         velocity,
-        mut player_state,
+        mut player_history,
         mut speed_scale,
         mut acceleration_scale,
         mut damping_scale,
@@ -195,8 +197,9 @@ fn on_ground_change(
         mut jump_height_scale,
     )) = player_q.get_single_mut()
     {
-        player_state.velocity_target_on_ground_change = velocity.target;
-        player_state.input_on_ground_change = input.x0z();
+        player_history.input_on_ground_change = input.x0z();
+        player_history.velocity_on_ground_change = velocity.0;
+        player_history.forward_on_ground_change = actor_q.single().forward();
 
         let scalars = ground_state.scalars();
         speed_scale.0 = scalars.speed;
@@ -208,25 +211,40 @@ fn on_ground_change(
 }
 
 fn movement(
-    mut player_q: Query<(&mut Velocity, &GroundState, &PlayerState, &SpeedScale), With<Player>>,
+    mut player_q: Query<
+        (
+            &mut Velocity,
+            &GroundState,
+            &PlayerHistory,
+            &SpeedScale,
+            &AccelerationScale,
+        ),
+        With<Player>,
+    >,
     actor_q: Query<&Transform, (With<Actor>, Without<Player>)>,
     input: Res<InputMovement>,
+    tick: Res<PhysicsTick>,
 ) {
-    let (mut velocity, ground_state, player_state, speed_scale) = player_q.single_mut();
+    let (mut velocity, ground_state, player_history, speed_scale, acceleration_scale) =
+        player_q.single_mut();
 
+    let dt = tick.delta();
     let speed = BASE_SPEED * speed_scale.0;
+    let acceleration = BASE_ACCELERATION * acceleration_scale.0 * dt;
 
     match ground_state {
         GroundState::Forward => {
-            let forward_speed = player_state
-                .velocity_target_on_ground_change
+            let forward_speed = player_history
+                .velocity_on_ground_change
                 .x0z()
                 .length()
                 .max(1.0);
-            velocity.target = actor_q.single().forward() * forward_speed;
+            velocity.move_towards(actor_q.single().forward() * forward_speed, acceleration);
         }
         _ => {
-            velocity.target = input.x0z() * speed;
+            if !input.is_zero() {
+                velocity.move_towards(input.x0z() * speed, acceleration);
+            }
         }
     }
 }
@@ -251,42 +269,23 @@ fn rotation(
 }
 
 fn jump(
-    mut player_q: Query<(&mut Velocity, &GravityScale, &JumpHeightScale), With<Player>>,
+    mut player_q: Query<(&mut Impulse, &GravityScale, &JumpHeightScale), With<Player>>,
     input_action: Res<InputAction>,
 ) {
     if let InputAction::Jump = *input_action {
-        let (mut velocity, gravity_scale, jump_height_scale) = player_q.single_mut();
+        let (mut impulse, gravity_scale, jump_height_scale) = player_q.single_mut();
 
-        let y = f32::sqrt(
+        impulse.0.y += f32::sqrt(
             2.0 * BASE_GRAVITY * gravity_scale.0 * BASE_JUMP_HEIGHT * jump_height_scale.0,
         );
-        velocity.add(Vec3::Y * y);
     }
 }
 
 fn apply_physics_scalars(
-    mut player_q: Query<
-        (
-            &mut Acceleration,
-            &mut Damping,
-            &mut Gravity,
-            &AccelerationScale,
-            &DampingScale,
-            &GravityScale,
-        ),
-        With<Player>,
-    >,
+    mut player_q: Query<(&mut Damping, &mut Gravity, &DampingScale, &GravityScale), With<Player>>,
 ) {
-    let (
-        mut acceleration,
-        mut damping,
-        mut gravity,
-        acceleration_scale,
-        damping_scale,
-        gravity_scale,
-    ) = player_q.single_mut();
+    let (mut damping, mut gravity, damping_scale, gravity_scale) = player_q.single_mut();
 
-    acceleration.0 = BASE_ACCELERATION * acceleration_scale.0;
     damping.0 = BASE_DAMPING * damping_scale.0;
     gravity.0 = BASE_GRAVITY * gravity_scale.0;
 }
