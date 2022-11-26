@@ -37,7 +37,6 @@ struct PlayerBundle {
     speed_scale: SpeedScale,
     acceleration_scale: AccelerationScale,
     damping_scale: DampingScale,
-    friction_scale: FrictionScale,
     gravity_scale: GravityScale,
     jump_height_scale: JumpHeightScale,
 }
@@ -55,9 +54,6 @@ struct AccelerationScale(f32);
 struct DampingScale(f32);
 
 #[derive(Component)]
-struct FrictionScale(f32);
-
-#[derive(Component)]
 struct JumpHeightScale(f32);
 
 #[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -72,7 +68,6 @@ struct Scalars {
     speed: f32,
     acceleration: f32,
     damping: f32,
-    friction: f32,
     gravity: f32,
     jump_height: f32,
 }
@@ -80,7 +75,6 @@ struct Scalars {
 const BASE_SPEED: f32 = 10.0;
 const BASE_ACCELERATION: f32 = BASE_SPEED * 3.0;
 const BASE_DAMPING: f32 = 1.0;
-const BASE_FRICTION: f32 = 1.0;
 const BASE_JUMP_HEIGHT: f32 = 3.0;
 
 impl GroundState {
@@ -90,7 +84,6 @@ impl GroundState {
                 speed: 1.0,
                 acceleration: 0.2,
                 damping: 0.1,
-                friction: 0.0,
                 gravity: 1.1,
                 jump_height: 1.0,
             },
@@ -98,7 +91,6 @@ impl GroundState {
                 speed: 1.0,
                 acceleration: 1.0,
                 damping: 2.0,
-                friction: 0.5,
                 gravity: 1.0,
                 jump_height: 1.0,
             },
@@ -106,7 +98,6 @@ impl GroundState {
                 speed: 1.5,
                 acceleration: 0.2,
                 damping: 0.0,
-                friction: 0.0,
                 gravity: 1.0,
                 jump_height: 1.0,
             },
@@ -125,7 +116,6 @@ fn setup(mut commands: Commands) {
                 speed_scale: SpeedScale(1.0),
                 acceleration_scale: AccelerationScale(1.0),
                 damping_scale: DampingScale(1.0),
-                friction_scale: FrictionScale(1.0),
                 gravity_scale: GravityScale(1.0),
                 jump_height_scale: JumpHeightScale(1.0),
             },
@@ -133,12 +123,12 @@ fn setup(mut commands: Commands) {
             Collider::capsule((Vec3::Y * 0.5).into(), (Vec3::Y * 1.5).into(), 0.5),
             CollisionGroups::from(PhysicsLayer::PLAYER),
             Friction {
-                coefficient: 0.0,
+                coefficient: 1.0,
                 combine_rule: CoefficientCombineRule::Multiply,
             },
             Restitution {
                 coefficient: 0.0,
-                combine_rule: CoefficientCombineRule::Multiply,
+                combine_rule: CoefficientCombineRule::Max,
             },
             Damping::default(),
             // ColliderMassProperties::default(),
@@ -206,7 +196,6 @@ fn on_ground_change(
             &mut SpeedScale,
             &mut AccelerationScale,
             &mut DampingScale,
-            &mut FrictionScale,
             &mut GravityScale,
             &mut JumpHeightScale,
         ),
@@ -218,7 +207,6 @@ fn on_ground_change(
         mut speed_scale,
         mut acceleration_scale,
         mut damping_scale,
-        mut friction_scale,
         mut gravity_scale,
         mut jump_height_scale,
     )) = player_q.get_single_mut()
@@ -227,7 +215,6 @@ fn on_ground_change(
         speed_scale.0 = scalars.speed;
         acceleration_scale.0 = scalars.acceleration;
         damping_scale.0 = scalars.damping;
-        friction_scale.0 = scalars.friction;
         gravity_scale.0 = scalars.gravity;
         jump_height_scale.0 = scalars.jump_height;
     }
@@ -287,11 +274,8 @@ fn jump(
     }
 }
 
-fn apply_physics_scalars(
-    mut player_q: Query<(&mut Damping, &mut Friction, &DampingScale, &FrictionScale), With<Player>>,
-) {
-    let (mut damping, mut friction, damping_scale, friction_scale) = player_q.single_mut();
+fn apply_physics_scalars(mut player_q: Query<(&mut Damping, &DampingScale), With<Player>>) {
+    let (mut damping, damping_scale) = player_q.single_mut();
 
     damping.linear_damping = BASE_DAMPING * damping_scale.0;
-    friction.coefficient = BASE_FRICTION * friction_scale.0;
 }

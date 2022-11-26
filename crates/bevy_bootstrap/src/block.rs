@@ -31,8 +31,8 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     Block::Ground,
                     RigidBody::Fixed,
                     Collider::cuboid(0.5, 0.5, 0.5),
-                    Friction::coefficient(1.0),
                     CollisionGroups::from(PhysicsLayer::PLATFORM),
+                    Friction::coefficient(0.3),
                     Restitution::coefficient(0.0),
                 ));
             }
@@ -47,8 +47,8 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     Block::Ground,
                     RigidBody::Fixed,
                     Collider::cuboid(0.5, 0.5, 0.5),
-                    Friction::coefficient(1.0),
                     CollisionGroups::from(PhysicsLayer::PLATFORM),
+                    Friction::coefficient(0.3),
                     Restitution::coefficient(0.0),
                 ));
             }
@@ -63,8 +63,8 @@ impl SpawnBlockExt for Commands<'_, '_> {
                     Block::Ice,
                     RigidBody::Fixed,
                     Collider::cuboid(0.5, 0.5, 0.5),
-                    Friction::coefficient(0.0),
                     CollisionGroups::from(PhysicsLayer::PLATFORM),
+                    Friction::coefficient(0.0),
                     Restitution::coefficient(0.0),
                 ));
             }
@@ -75,8 +75,8 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         Block::Spinner,
                         RigidBody::KinematicVelocityBased,
                         Collider::cuboid(0.5, 0.5, 0.5),
-                        Friction::coefficient(1.0),
                         CollisionGroups::from(PhysicsLayer::PLATFORM),
+                        Friction::coefficient(0.3),
                         Restitution::coefficient(0.0),
                         Velocity {
                             linvel: Vec3::ZERO,
@@ -110,8 +110,8 @@ impl SpawnBlockExt for Commands<'_, '_> {
                         Block::Cube,
                         RigidBody::KinematicPositionBased,
                         Collider::cuboid(0.5, 0.5, 0.5),
-                        Friction::coefficient(1.0),
                         CollisionGroups::from(PhysicsLayer::BLOCK),
+                        Friction::coefficient(0.3),
                         Restitution::coefficient(0.0),
                     ))
                     .id();
